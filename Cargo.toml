@@ -1,0 +1,10 @@
+[package]
+name = "tokenlock"
+version = "0.1.0"
+authors = ["yvt <i@yvt.jp>"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/yvt/tokenlock"
+description = """
+Cell type whose contents can be accessed only via an inforgeable token.
+"""
