@@ -185,7 +185,7 @@ impl<T: ?Sized> TokenLock<T> {
 }
 
 #[derive(Debug, Clone, Hash)]
-pub struct UniqueId(Arc<usize>);
+struct UniqueId(Arc<usize>);
 
 impl PartialEq for UniqueId {
     fn eq(&self, other: &Self) -> bool {
