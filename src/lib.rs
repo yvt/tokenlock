@@ -7,7 +7,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //
-//! Cell type whose contents can be accessed only via an inforgeable token.
+//! Provides a `Send`-able cell type whose contents can be accessed only via an
+//! inforgeable token.
 //!
 //! # Examples
 //!

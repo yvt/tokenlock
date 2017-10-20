@@ -2,7 +2,7 @@
 
 [<img src="https://docs.rs/tokenlock/badge.svg" alt="docs.rs">](https://docs.rs/tokenlock/)
 
-Cell type whose contents can be accessed only via an inforgeable token.
+Provides a `Send`-able cell type whose contents can be accessed only via an inforgeable token.
 
 ## Examples
 
