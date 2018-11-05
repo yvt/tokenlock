@@ -89,7 +89,7 @@
 //! let read_guard1 = lock.read(&token).unwrap();
 //! let read_guard2 = lock.read(&token).unwrap();
 //! ```
-use std::{mem, fmt};
+use std::{fmt, hash};
 use std::cell::UnsafeCell;
 use std::sync::Arc;
 
@@ -109,6 +109,12 @@ unsafe impl Sync for Token {}
 impl Token {
     pub fn new() -> Self {
         Token(UniqueId::new())
+    }
+}
+
+impl Default for Token {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -185,7 +191,7 @@ impl<T: ?Sized> TokenLock<T> {
     #[inline]
     #[allow(dead_code)]
     pub fn get_mut(&mut self) -> &mut T {
-        unsafe { mem::transmute(self.data.get()) }
+        unsafe { &mut *self.data.get() }
     }
 
     #[inline]
@@ -208,7 +214,7 @@ impl<T: ?Sized> TokenLock<T> {
     }
 }
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone)]
 struct UniqueId(Arc<usize>);
 
 impl PartialEq for UniqueId {
@@ -217,6 +223,12 @@ impl PartialEq for UniqueId {
     }
 }
 impl Eq for UniqueId {}
+
+impl hash::Hash for UniqueId {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        (*self.0).hash(state)
+    }
+}
 
 impl UniqueId {
     pub fn new() -> Self {
