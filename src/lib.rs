@@ -58,6 +58,7 @@
 //! let lock = TokenLock::new(&token, 1);
 //! let guard = lock.write(&mut token).unwrap();
 //! drop(lock); // compile error: `guard` cannot outlive `TokenLock`
+//! drop(guard);
 //! ```
 //!
 //! ```compile_fail
@@ -67,6 +68,7 @@
 //! # let lock = TokenLock::new(&token, 1);
 //! # let guard = lock.write(&mut token).unwrap();
 //! drop(token); // compile error: `guard` cannot outlive `Token`
+//! drop(guard);
 //! ```
 //!
 //! It also prevents from forming a reference to the contained value when
@@ -78,6 +80,7 @@
 //! # let lock = TokenLock::new(&token, 1);
 //! let write_guard = lock.write(&mut token).unwrap();
 //! let read_guard = lock.read(&token).unwrap(); // compile error
+//! drop(write_guard);
 //! ```
 //!
 //! While allowing multiple immutable references:
