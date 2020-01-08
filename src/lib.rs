@@ -214,7 +214,7 @@ impl<T: ?Sized, I> TokenLock<T, I> {
 }
 
 #[derive(Debug, Clone)]
-struct UniqueId(Arc<usize>);
+struct UniqueId(Arc<()>);
 
 impl PartialEq for UniqueId {
     fn eq(&self, other: &Self) -> bool {
@@ -225,18 +225,13 @@ impl Eq for UniqueId {}
 
 impl hash::Hash for UniqueId {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        (*self.0).hash(state)
+        (&*self.0 as *const ()).hash(state)
     }
 }
 
 impl UniqueId {
     pub fn new() -> Self {
-        // This guarantees consistent hash generation even if Rust would
-        // implement a moving GC in future
-        let mut arc = Arc::new(0);
-        let id = &*arc as *const usize as usize;
-        *Arc::get_mut(&mut arc).unwrap() = id;
-        UniqueId(arc)
+        UniqueId(Arc::new(()))
     }
 }
 
@@ -256,4 +251,13 @@ fn bad_token() {
     let mut token2 = ArcToken::new();
     let lock = TokenLock::new(token1.id(), 1);
     assert!(lock.write(&mut token2).is_none());
+}
+
+#[test]
+fn unique_id_hash() {
+    let id1 = UniqueId::new();
+    let id2 = id1.clone();
+    let mut hm = std::collections::HashSet::new();
+    assert!(hm.insert(id1));
+    assert!(!hm.insert(id2)); // should have an identical hash
 }
