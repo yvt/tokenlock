@@ -188,6 +188,11 @@ impl<T, I> TokenLock<T, I> {
 
 impl<T: ?Sized, I> TokenLock<T, I> {
     #[inline]
+    fn keyhole(&self) -> &I {
+        &self.keyhole
+    }
+
+    #[inline]
     #[allow(dead_code)]
     pub fn get_mut(&mut self) -> &mut T {
         unsafe { &mut *self.data.get() }
