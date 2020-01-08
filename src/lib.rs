@@ -188,7 +188,7 @@ impl<T, I> TokenLock<T, I> {
 
 impl<T: ?Sized, I> TokenLock<T, I> {
     #[inline]
-    fn keyhole(&self) -> &I {
+    pub fn keyhole(&self) -> &I {
         &self.keyhole
     }
 
