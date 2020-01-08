@@ -96,7 +96,8 @@ use std::cell::UnsafeCell;
 use std::fmt;
 
 mod arc;
-pub use self::arc::*;
+mod rc;
+pub use self::{arc::*, rc::*};
 
 /// Trait for an unforgeable token used to access the contents of a
 /// [`TokenLock`].
