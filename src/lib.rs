@@ -146,7 +146,7 @@ unsafe impl Token<ArcTokenId> for ArcToken {
 ///
 /// ```
 /// # use tokenlock::*;
-/// let mut token = ArcToken::new();
+/// let token = ArcToken::new();
 /// let token_id = token.id();
 /// let lock1 = TokenLock::new(token_id.clone(), 1);
 /// let lock2 = TokenLock::new(token_id, 2);
