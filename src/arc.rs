@@ -6,6 +6,8 @@ use super::Token;
 /// `TokenLock`.
 ///
 /// This type is not `Clone` to ensure an exclusive access to [`TokenLock`].
+///
+/// [`TokenLock`]: crate::TokenLock
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ArcToken(UniqueId);
 
@@ -34,6 +36,8 @@ unsafe impl Token<ArcTokenId> for ArcToken {
 
 /// Token that cannot be used to access the contents of a [`TokenLock`], but can
 /// be used to create a new `TokenLock`.
+///
+/// [`TokenLock`]: crate::TokenLock
 ///
 /// # Examples
 ///
