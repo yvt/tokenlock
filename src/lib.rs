@@ -8,7 +8,7 @@
 // except according to those terms.
 //
 //! Provides a `Send`-able cell type whose contents can be accessed only via an
-//! inforgeable token.
+//! unforgeable token.
 //!
 //! # Examples
 //!
