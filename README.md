@@ -3,14 +3,14 @@
 [<img src="https://docs.rs/tokenlock/badge.svg" alt="docs.rs">](https://docs.rs/tokenlock/)
 
 Provides a `Send`-able cell type whose contents can be accessed only via an
-inforgeable token.
+unforgeable token.
 
 ## Examples
 
 ```rust
-let mut token = Token::new();
+let mut token = ArcToken::new();
 
-let lock = TokenLock::new(&token, 1);
+let lock = TokenLock::new(token.id(), 1);
 assert_eq!(*lock.read(&token).unwrap(), 1);
 
 let mut guard = lock.write(&mut token).unwrap();
@@ -23,7 +23,7 @@ but only the thread holding the original `Token` can access its contents.
 `Token` cannot be cloned:
 
 ```rust
-let lock = Arc::new(TokenLock::new(&token, 1));
+let lock = Arc::new(TokenLock::new(token.id(), 1));
 
 let lock_1 = Arc::clone(&lock);
 thread::Builder::new().spawn(move || {
@@ -41,23 +41,36 @@ thread::Builder::new().spawn(move || {
 The lifetime of the returned reference is limited by both of the `TokenLock`
 and `Token`.
 
-```rust
-let mut token = Token::new();
-let lock = TokenLock::new(&token, 1);
+```compile_fail
+# use tokenlock::*;
+# use std::mem::drop;
+let mut token = ArcToken::new();
+let lock = TokenLock::new(token.id(), 1);
 let guard = lock.write(&mut token).unwrap();
 drop(lock); // compile error: `guard` cannot outlive `TokenLock`
+drop(guard);
 ```
 
-```rust
+```compile_fail
+# use tokenlock::*;
+# use std::mem::drop;
+# let mut token = ArcToken::new();
+# let lock = TokenLock::new(token.id(), 1);
+# let guard = lock.write(&mut token).unwrap();
 drop(token); // compile error: `guard` cannot outlive `Token`
+drop(guard);
 ```
 
 It also prevents from forming a reference to the contained value when
 there already is a mutable reference to it:
 
-```rust
+```compile_fail
+# use tokenlock::*;
+# let mut token = ArcToken::new();
+# let lock = TokenLock::new(token.id(), 1);
 let write_guard = lock.write(&mut token).unwrap();
 let read_guard = lock.read(&token).unwrap(); // compile error
+drop(write_guard);
 ```
 
 While allowing multiple immutable references:
