@@ -1,5 +1,5 @@
 //
-// Copyright 2017 yvt, all rights reserved.
+// Copyright 2020 yvt, all rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
