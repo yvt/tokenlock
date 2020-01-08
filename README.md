@@ -41,9 +41,7 @@ thread::Builder::new().spawn(move || {
 The lifetime of the returned reference is limited by both of the `TokenLock`
 and `Token`.
 
-```compile_fail
-# use tokenlock::*;
-# use std::mem::drop;
+```rust
 let mut token = ArcToken::new();
 let lock = TokenLock::new(token.id(), 1);
 let guard = lock.write(&mut token).unwrap();
@@ -51,12 +49,7 @@ drop(lock); // compile error: `guard` cannot outlive `TokenLock`
 drop(guard);
 ```
 
-```compile_fail
-# use tokenlock::*;
-# use std::mem::drop;
-# let mut token = ArcToken::new();
-# let lock = TokenLock::new(token.id(), 1);
-# let guard = lock.write(&mut token).unwrap();
+```rust
 drop(token); // compile error: `guard` cannot outlive `Token`
 drop(guard);
 ```
@@ -64,10 +57,7 @@ drop(guard);
 It also prevents from forming a reference to the contained value when
 there already is a mutable reference to it:
 
-```compile_fail
-# use tokenlock::*;
-# let mut token = ArcToken::new();
-# let lock = TokenLock::new(token.id(), 1);
+```rust
 let write_guard = lock.write(&mut token).unwrap();
 let read_guard = lock.read(&token).unwrap(); // compile error
 drop(write_guard);
