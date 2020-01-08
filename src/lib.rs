@@ -110,7 +110,7 @@ pub unsafe trait Token<I> {
 /// An `Arc`-based unforgeable token used to access the contents of a
 /// `TokenLock`.
 ///
-/// This type is not `Clone` to ensure an exclusive access to `TokenLock`.
+/// This type is not `Clone` to ensure an exclusive access to [`TokenLock`].
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ArcToken(UniqueId);
 
@@ -137,12 +137,12 @@ unsafe impl Token<ArcTokenId> for ArcToken {
     }
 }
 
-/// Token that cannot be used to access the contents of a `TokenLock`, but can
+/// Token that cannot be used to access the contents of a [`TokenLock`], but can
 /// be used to create a new `TokenLock`.
 ///
 /// # Examples
 ///
-/// `ArcTokenId` can be cloned while `ArcToken` cannot:
+/// `ArcTokenId` can be cloned while [`ArcToken`] cannot:
 ///
 /// ```
 /// # use tokenlock::*;
@@ -155,7 +155,7 @@ unsafe impl Token<ArcTokenId> for ArcToken {
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct ArcTokenId(UniqueId);
 
-/// A mutual exclusive primitive that can be accessed using a `Token`
+/// A mutual exclusive primitive that can be accessed using a [`Token`]`<I>`
 /// with a very low over-head.
 ///
 /// See the [module-level documentation] for more details.
