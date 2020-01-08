@@ -9,3 +9,6 @@ description = """
 Send-able cell type whose contents can be accessed only via an inforgeable token.
 """
 keywords = ["token", "lock", "cell"]
+
+[badges]
+maintenance = { status = "passively-maintained" }
