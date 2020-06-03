@@ -139,6 +139,11 @@ impl<T, I> TokenLock<T, I> {
             data: UnsafeCell::new(data),
         }
     }
+
+    /// Consume this `TokenLock`, returning the contained data.
+    pub fn into_inner(self) -> T {
+        self.data.into_inner()
+    }
 }
 
 impl<T: ?Sized, I> TokenLock<T, I> {
