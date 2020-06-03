@@ -152,6 +152,12 @@ impl<T: ?Sized, I> TokenLock<T, I> {
         unsafe { &mut *self.data.get() }
     }
 
+    /// Get a raw pointer to the contained data.
+    #[inline]
+    pub fn as_ptr(&self) -> *mut T {
+        self.data.get()
+    }
+
     #[inline]
     pub fn read<'a, K: Token<I>>(&'a self, token: &'a K) -> Option<&'a T> {
         if token.eq_id(&self.keyhole) {
