@@ -259,6 +259,38 @@ impl<T, I> TokenLock<T, I> {
     pub fn replace<K: Token<I>>(&self, token: &mut K, t: T) -> T {
         std_core::mem::replace(self.write(token), t)
     }
+
+    /// Swap the contained data with the contained data of `other`. Panic if
+    /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
+    ///
+    /// This function corresponds to [`std::mem::swap`].
+    pub fn swap<IOther, K: Token<I> + Token<IOther>>(
+        &self,
+        token: &mut K,
+        other: &TokenLock<T, IOther>,
+    ) {
+        self.try_swap(token, other).unwrap()
+    }
+
+    /// Swap the contained data with the contained data of `other`. Return
+    /// `BadTokenError` if `token` doesn't fit in the
+    /// [`keyhole`](TokenLock::keyhole) of both `TokenLock`s.
+    pub fn try_swap<IOther, K: Token<I> + Token<IOther>>(
+        &self,
+        token: &mut K,
+        other: &TokenLock<T, IOther>,
+    ) -> Result<(), BadTokenError> {
+        // Valiate token
+        let _ = self.try_write(token)?;
+        let _ = other.try_write(token)?;
+
+        // Can't take multiple loans using a single `token`, so we need raw
+        // pointers here.
+        unsafe {
+            std_core::ptr::swap(self.as_ptr(), other.as_ptr());
+        }
+        Ok(())
+    }
 }
 
 impl<T: Clone, I: Clone> TokenLock<T, I> {
