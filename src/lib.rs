@@ -303,7 +303,8 @@ impl<T, I> TokenLock<T, I> {
     }
 
     /// Swap the contained data with the contained data of `other`. Panic if
-    /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
+    /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole) of both
+    /// `TokenLock`s.
     ///
     /// This function corresponds to [`std::mem::swap`].
     pub fn swap<IOther, K: Token<I> + Token<IOther>>(
