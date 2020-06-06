@@ -261,6 +261,14 @@ impl<T, I> TokenLock<T, I> {
     }
 }
 
+impl<T: Clone, I: Clone> TokenLock<T, I> {
+    /// Clone the `TokenLock`. Panic if `token` doesn't fit in the
+    /// [`keyhole`](TokenLock::keyhole).
+    pub fn clone<K: Token<I>>(&self, token: &K) -> Self {
+        Self::new(self.keyhole.clone(), self.get(token))
+    }
+}
+
 #[test]
 #[cfg(feature = "std")]
 fn basic() {
