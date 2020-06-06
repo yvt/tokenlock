@@ -126,6 +126,7 @@ pub unsafe trait Token<I> {
 /// See the [module-level documentation] for more details.
 ///
 /// [module-level documentation]: index.html
+#[derive(Default)]
 pub struct TokenLock<T: ?Sized, I> {
     keyhole: I,
     data: UnsafeCell<T>,
