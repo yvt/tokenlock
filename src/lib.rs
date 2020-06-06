@@ -339,7 +339,15 @@ impl<T: Clone, I: Clone> TokenLock<T, I> {
     /// Clone the `TokenLock`. Panic if `token` doesn't fit in the
     /// [`keyhole`](TokenLock::keyhole).
     pub fn clone<K: Token<I>>(&self, token: &K) -> Self {
-        Self::new(self.keyhole.clone(), self.get(token))
+        let value = self.get(token);
+        Self::new(self.keyhole.clone(), value)
+    }
+
+    /// Clone the `TokenLock`. Return `BadTokenError` if `token` doesn't fit in
+    /// the [`keyhole`](TokenLock::keyhole).
+    pub fn try_clone<K: Token<I>>(&self, token: &K) -> Result<Self, BadTokenError> {
+        let value = self.try_get(token)?;
+        Ok(Self::new(self.keyhole.clone(), value))
     }
 }
 
