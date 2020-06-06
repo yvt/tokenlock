@@ -92,11 +92,21 @@
 //! let read_guard1 = lock.read(&token).unwrap();
 //! let read_guard2 = lock.read(&token).unwrap();
 //! ```
-use std::cell::UnsafeCell;
-use std::fmt;
+#![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(not(feature = "std"))]
+use core as std_core;
+#[cfg(feature = "std")]
+use std as std_core;
+
+use self::std_core::cell::UnsafeCell;
+use self::std_core::fmt;
+
+#[cfg(feature = "std")]
 mod arc;
+#[cfg(feature = "std")]
 mod rc;
+#[cfg(feature = "std")]
 pub use self::{arc::*, rc::*};
 
 /// Trait for an unforgeable token used to access the contents of a
@@ -183,6 +193,7 @@ impl<T: ?Sized, I> TokenLock<T, I> {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn basic() {
     let mut token = ArcToken::new();
     let lock = TokenLock::new(token.id(), 1);
@@ -193,6 +204,7 @@ fn basic() {
 }
 
 #[test]
+#[cfg(feature = "std")]
 fn bad_token() {
     let token1 = ArcToken::new();
     let mut token2 = ArcToken::new();

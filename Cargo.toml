@@ -9,6 +9,11 @@ description = """
 Send-able cell type whose contents can be accessed only via an inforgeable token.
 """
 keywords = ["token", "lock", "cell"]
+categories = ["rust-patterns", "no-std"]
+
+[features]
+default = ["std"]
+std = []
 
 [badges]
 maintenance = { status = "passively-maintained" }
