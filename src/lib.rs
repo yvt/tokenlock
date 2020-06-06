@@ -142,6 +142,25 @@ impl<T: ?Sized, I: fmt::Debug> fmt::Debug for TokenLock<T, I> {
     }
 }
 
+/// Error type returned when a key ([`Token`]) doesn't fit in a keyhole
+/// ([`TokenLock::keyhole`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BadTokenError;
+
+#[cfg(feature = "std")]
+impl std::error::Error for BadTokenError {
+    fn description(&self) -> &str {
+        "token mismatch"
+    }
+}
+
+#[cfg(feature = "std")]
+impl fmt::Display for BadTokenError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "token mismatch")
+    }
+}
+
 impl<T, I> TokenLock<T, I> {
     pub const fn new(keyhole: I, data: T) -> Self {
         Self {
@@ -174,20 +193,20 @@ impl<T: ?Sized, I> TokenLock<T, I> {
     }
 
     #[inline]
-    pub fn read<'a, K: Token<I>>(&'a self, token: &'a K) -> Option<&'a T> {
+    pub fn read<'a, K: Token<I>>(&'a self, token: &'a K) -> Result<&'a T, BadTokenError> {
         if token.eq_id(&self.keyhole) {
-            Some(unsafe { &*self.data.get() })
+            Ok(unsafe { &*self.data.get() })
         } else {
-            None
+            Err(BadTokenError)
         }
     }
 
     #[inline]
-    pub fn write<'a, K: Token<I>>(&'a self, token: &'a mut K) -> Option<&'a mut T> {
+    pub fn write<'a, K: Token<I>>(&'a self, token: &'a mut K) -> Result<&'a mut T, BadTokenError> {
         if token.eq_id(&self.keyhole) {
-            Some(unsafe { &mut *self.data.get() })
+            Ok(unsafe { &mut *self.data.get() })
         } else {
-            None
+            Err(BadTokenError)
         }
     }
 }
@@ -209,5 +228,5 @@ fn bad_token() {
     let token1 = ArcToken::new();
     let mut token2 = ArcToken::new();
     let lock = TokenLock::new(token1.id(), 1);
-    assert!(lock.write(&mut token2).is_none());
+    assert_eq!(lock.write(&mut token2), Err(BadTokenError));
 }
