@@ -232,6 +232,34 @@ impl<T: ?Sized, I> TokenLock<T, I> {
     }
 }
 
+impl<T, I> TokenLock<T, I> {
+    /// Get the contained data by cloning. Panic if `token` doesn't fit in
+    /// the [`keyhole`](TokenLock::keyhole).
+    pub fn get<K: Token<I>>(&self, token: &K) -> T
+    where
+        T: Clone,
+    {
+        self.read(token).clone()
+    }
+
+    /// Get the contained data by cloning. Return `BadTokenError` if `token`
+    /// doesn't fit in the [`keyhole`](TokenLock::keyhole).
+    pub fn try_get<K: Token<I>>(&self, token: &K) -> Result<T, BadTokenError>
+    where
+        T: Clone,
+    {
+        Ok(self.try_read(token)?.clone())
+    }
+
+    /// Replace the contained data with a new one. Panic if `token` doesn't fit
+    /// in the [`keyhole`](TokenLock::keyhole).
+    ///
+    /// This function corresponds to [`std::mem::replace`].
+    pub fn replace<K: Token<I>>(&self, token: &mut K, t: T) -> T {
+        std_core::mem::replace(self.write(token), t)
+    }
+}
+
 #[test]
 #[cfg(feature = "std")]
 fn basic() {
