@@ -252,12 +252,54 @@ impl<T, I> TokenLock<T, I> {
         Ok(self.try_read(token)?.clone())
     }
 
+    /// Take the contained data, leaving `Default::default()` in its place.
+    /// Panic if `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
+    pub fn take<K: Token<I>>(&self, token: &mut K) -> T
+    where
+        T: Default,
+    {
+        self.replace_with(token, |_| Default::default())
+    }
+
+    /// Take the contained data, leaving `Default::default()` in its place.
+    /// Return `BadTokenError` if `token` doesn't fit in the
+    /// [`keyhole`](TokenLock::keyhole).
+    pub fn try_take<K: Token<I>>(&self, token: &mut K) -> Result<T, BadTokenError>
+    where
+        T: Default,
+    {
+        self.try_replace_with(token, |_| Default::default())
+    }
+
     /// Replace the contained data with a new one. Panic if `token` doesn't fit
     /// in the [`keyhole`](TokenLock::keyhole).
     ///
     /// This function corresponds to [`std::mem::replace`].
     pub fn replace<K: Token<I>>(&self, token: &mut K, t: T) -> T {
         std_core::mem::replace(self.write(token), t)
+    }
+
+    /// Replace the contained data with a new one computed by the given
+    /// closure. Panic if `token` doesn't fit in the
+    /// [`keyhole`](TokenLock::keyhole).
+    ///
+    /// This function corresponds to [`std::mem::replace`].
+    pub fn replace_with<K: Token<I>>(&self, token: &mut K, f: impl FnOnce(&mut T) -> T) -> T {
+        self.try_replace_with(token, f).unwrap()
+    }
+
+    /// Replace the contained data with a new one computed by `f`. Panic if
+    /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
+    ///
+    /// This function corresponds to [`std::mem::replace`].
+    pub fn try_replace_with<K: Token<I>>(
+        &self,
+        token: &mut K,
+        f: impl FnOnce(&mut T) -> T,
+    ) -> Result<T, BadTokenError> {
+        let inner = self.try_write(token)?;
+        let new = f(inner);
+        Ok(std_core::mem::replace(inner, new))
     }
 
     /// Swap the contained data with the contained data of `other`. Panic if
