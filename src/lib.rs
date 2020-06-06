@@ -17,9 +17,9 @@
 //! let mut token = ArcToken::new();
 //!
 //! let lock = TokenLock::new(token.id(), 1);
-//! assert_eq!(*lock.read(&token).unwrap(), 1);
+//! assert_eq!(*lock.read(&token), 1);
 //!
-//! let mut guard = lock.write(&mut token).unwrap();
+//! let mut guard = lock.write(&mut token);
 //! assert_eq!(*guard, 1);
 //! *guard = 2;
 //! ```
@@ -41,11 +41,11 @@
 //!     let mut token_1 = token;
 //!
 //!     // I have `Token` so I can get a mutable reference to the contents
-//!     lock_1.write(&mut token_1).unwrap();
+//!     lock_1.write(&mut token_1);
 //! }).unwrap();
 //!
 //! // can't access the contents; I no longer have `Token`
-//! // lock.write(&mut token).unwrap();
+//! // lock.write(&mut token);
 //! ```
 //!
 //! The lifetime of the returned reference is limited by both of the `TokenLock`
@@ -56,7 +56,7 @@
 //! # use std::mem::drop;
 //! let mut token = ArcToken::new();
 //! let lock = TokenLock::new(token.id(), 1);
-//! let guard = lock.write(&mut token).unwrap();
+//! let guard = lock.write(&mut token);
 //! drop(lock); // compile error: `guard` cannot outlive `TokenLock`
 //! drop(guard);
 //! ```
@@ -66,7 +66,7 @@
 //! # use std::mem::drop;
 //! # let mut token = ArcToken::new();
 //! # let lock = TokenLock::new(token.id(), 1);
-//! # let guard = lock.write(&mut token).unwrap();
+//! # let guard = lock.write(&mut token);
 //! drop(token); // compile error: `guard` cannot outlive `Token`
 //! drop(guard);
 //! ```
@@ -78,8 +78,8 @@
 //! # use tokenlock::*;
 //! # let mut token = ArcToken::new();
 //! # let lock = TokenLock::new(token.id(), 1);
-//! let write_guard = lock.write(&mut token).unwrap();
-//! let read_guard = lock.read(&token).unwrap(); // compile error
+//! let write_guard = lock.write(&mut token);
+//! let read_guard = lock.read(&token); // compile error
 //! drop(write_guard);
 //! ```
 //!
@@ -89,8 +89,8 @@
 //! # use tokenlock::*;
 //! # let mut token = ArcToken::new();
 //! # let lock = TokenLock::new(token.id(), 1);
-//! let read_guard1 = lock.read(&token).unwrap();
-//! let read_guard2 = lock.read(&token).unwrap();
+//! let read_guard1 = lock.read(&token);
+//! let read_guard2 = lock.read(&token);
 //! ```
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -192,8 +192,24 @@ impl<T: ?Sized, I> TokenLock<T, I> {
         self.data.get()
     }
 
+    /// Get a reference to the contained data. Panic if `token` doesn't fit in
+    /// the [`keyhole`](TokenLock::keyhole).
     #[inline]
-    pub fn read<'a, K: Token<I>>(&'a self, token: &'a K) -> Result<&'a T, BadTokenError> {
+    pub fn read<'a, K: Token<I>>(&'a self, token: &'a K) -> &'a T {
+        self.try_read(token).unwrap()
+    }
+
+    /// Get a mutable reference to the contained data. Panic if `token` doesn't
+    /// fit in the [`keyhole`](TokenLock::keyhole).
+    #[inline]
+    pub fn write<'a, K: Token<I>>(&'a self, token: &'a mut K) -> &'a mut T {
+        self.try_write(token).unwrap()
+    }
+
+    /// Get a reference to the contained data. Return `BadTokenError` if `token`
+    /// doesn't fit in the [`keyhole`](TokenLock::keyhole).
+    #[inline]
+    pub fn try_read<'a, K: Token<I>>(&'a self, token: &'a K) -> Result<&'a T, BadTokenError> {
         if token.eq_id(&self.keyhole) {
             Ok(unsafe { &*self.data.get() })
         } else {
@@ -201,8 +217,13 @@ impl<T: ?Sized, I> TokenLock<T, I> {
         }
     }
 
+    /// Get a mutable reference to the contained data. Return `BadTokenError` if
+    /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
     #[inline]
-    pub fn write<'a, K: Token<I>>(&'a self, token: &'a mut K) -> Result<&'a mut T, BadTokenError> {
+    pub fn try_write<'a, K: Token<I>>(
+        &'a self,
+        token: &'a mut K,
+    ) -> Result<&'a mut T, BadTokenError> {
         if token.eq_id(&self.keyhole) {
             Ok(unsafe { &mut *self.data.get() })
         } else {
@@ -216,9 +237,9 @@ impl<T: ?Sized, I> TokenLock<T, I> {
 fn basic() {
     let mut token = ArcToken::new();
     let lock = TokenLock::new(token.id(), 1);
-    assert_eq!(*lock.read(&token).unwrap(), 1);
+    assert_eq!(*lock.read(&token), 1);
 
-    let guard = lock.write(&mut token).unwrap();
+    let guard = lock.write(&mut token);
     assert_eq!(*guard, 1);
 }
 
@@ -228,5 +249,5 @@ fn bad_token() {
     let token1 = ArcToken::new();
     let mut token2 = ArcToken::new();
     let lock = TokenLock::new(token1.id(), 1);
-    assert_eq!(lock.write(&mut token2), Err(BadTokenError));
+    assert_eq!(lock.try_write(&mut token2), Err(BadTokenError));
 }
