@@ -143,7 +143,7 @@ impl<T: ?Sized, I: fmt::Debug> fmt::Debug for TokenLock<T, I> {
 }
 
 impl<T, I> TokenLock<T, I> {
-    pub fn new(keyhole: I, data: T) -> Self {
+    pub const fn new(keyhole: I, data: T) -> Self {
         Self {
             keyhole,
             data: UnsafeCell::new(data),
@@ -158,7 +158,7 @@ impl<T, I> TokenLock<T, I> {
 
 impl<T: ?Sized, I> TokenLock<T, I> {
     #[inline]
-    pub fn keyhole(&self) -> &I {
+    pub const fn keyhole(&self) -> &I {
         &self.keyhole
     }
 
@@ -169,7 +169,7 @@ impl<T: ?Sized, I> TokenLock<T, I> {
 
     /// Get a raw pointer to the contained data.
     #[inline]
-    pub fn as_ptr(&self) -> *mut T {
+    pub const fn as_ptr(&self) -> *mut T {
         self.data.get()
     }
 
