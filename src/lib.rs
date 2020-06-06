@@ -163,6 +163,7 @@ impl fmt::Display for BadTokenError {
 }
 
 impl<T, I> TokenLock<T, I> {
+    /// Construct a `TokenLock`.
     pub const fn new(keyhole: I, data: T) -> Self {
         Self {
             keyhole,
@@ -177,11 +178,13 @@ impl<T, I> TokenLock<T, I> {
 }
 
 impl<T: ?Sized, I> TokenLock<T, I> {
+    /// Get a reference to the contained `I` (keyhole).
     #[inline]
     pub const fn keyhole(&self) -> &I {
         &self.keyhole
     }
 
+    /// Get a mutable reference to the contained data.
     #[inline]
     pub fn get_mut(&mut self) -> &mut T {
         unsafe { &mut *self.data.get() }
