@@ -11,9 +11,9 @@ unforgeable token.
 let mut token = ArcToken::new();
 
 let lock = TokenLock::new(token.id(), 1);
-assert_eq!(*lock.read(&token).unwrap(), 1);
+assert_eq!(*lock.read(&token), 1);
 
-let mut guard = lock.write(&mut token).unwrap();
+let mut guard = lock.write(&mut token);
 assert_eq!(*guard, 1);
 *guard = 2;
 ```
@@ -31,11 +31,11 @@ thread::Builder::new().spawn(move || {
     let mut token_1 = token;
 
     // I have `Token` so I can get a mutable reference to the contents
-    lock_1.write(&mut token_1).unwrap();
+    lock_1.write(&mut token_1);
 }).unwrap();
 
 // can't access the contents; I no longer have `Token`
-// lock.write(&mut token).unwrap();
+// lock.write(&mut token);
 ```
 
 The lifetime of the returned reference is limited by both of the `TokenLock`
@@ -44,7 +44,7 @@ and `Token`.
 ```rust
 let mut token = ArcToken::new();
 let lock = TokenLock::new(token.id(), 1);
-let guard = lock.write(&mut token).unwrap();
+let guard = lock.write(&mut token);
 drop(lock); // compile error: `guard` cannot outlive `TokenLock`
 drop(guard);
 ```
@@ -58,16 +58,16 @@ It also prevents from forming a reference to the contained value when
 there already is a mutable reference to it:
 
 ```rust
-let write_guard = lock.write(&mut token).unwrap();
-let read_guard = lock.read(&token).unwrap(); // compile error
+let write_guard = lock.write(&mut token);
+let read_guard = lock.read(&token); // compile error
 drop(write_guard);
 ```
 
 While allowing multiple immutable references:
 
 ```rust
-let read_guard1 = lock.read(&token).unwrap();
-let read_guard2 = lock.read(&token).unwrap();
+let read_guard1 = lock.read(&token);
+let read_guard2 = lock.read(&token);
 ```
 
 License: MIT/Apache-2.0
