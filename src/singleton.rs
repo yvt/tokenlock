@@ -1,4 +1,4 @@
-use crate::std_core::{fmt, hash, marker::PhantomData};
+use crate::std_core::{fmt, hash, marker::PhantomData, ops, ptr::NonNull};
 
 use super::Token;
 
@@ -54,12 +54,137 @@ impl<T: ?Sized> SingletonToken<T> {
     pub fn id(&self) -> SingletonTokenId<T> {
         SingletonTokenId(PhantomData)
     }
+
+    /// Borrow `self` as [`SingletonTokenRef`].
+    ///
+    /// `SingletonTokenRef` is truly zero-sized, so it's more efficient to
+    /// store and pass than `&SingletonToken`.
+    pub fn borrow(&self) -> SingletonTokenRef<'_, T> {
+        SingletonTokenRef(PhantomData)
+    }
+
+    /// Borrow `self` mutably as [`SingletonTokenRefMut`].
+    ///
+    /// `SingletonTokenRefMut` is truly zero-sized, so it's more efficient to
+    /// store and pass than `&mut SingletonToken`.
+    pub fn borrow_mut(&mut self) -> SingletonTokenRefMut<'_, T> {
+        SingletonTokenRefMut(PhantomData)
+    }
 }
 
 unsafe impl<T: ?Sized> Token<SingletonTokenId<T>> for SingletonToken<T> {
     #[inline(always)]
     fn eq_id(&self, _: &SingletonTokenId<T>) -> bool {
         true
+    }
+}
+
+/// Zero-sized logical equivalent of `&'a `[`SingletonToken`]`<T>`.
+///
+/// # Examples
+///
+/// ```
+/// # use tokenlock::*;
+/// let token = unsafe { SingletonToken::<u32>::new_unchecked() };
+/// let lock = TokenLock::new(token.id(), 1);
+///
+/// // `SingletonTokenRef` is zero-sized (unlike `&SingletonToken`), so there is
+/// // no runtime overhead involved with passing `SingletonTokenRef`.
+/// access_lock(token.borrow(), &lock);
+///
+/// fn access_lock(
+///     token: SingletonTokenRef<'_, u32>,
+///     lock: &TokenLock<u32, SingletonTokenId<u32>>,
+/// ) {
+///     assert_eq!(*lock.read(&*token), 1);
+/// }
+/// ```
+pub struct SingletonTokenRef<'a, T: ?Sized>(PhantomData<&'a SingletonToken<T>>);
+
+impl<T: ?Sized> fmt::Debug for SingletonTokenRef<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("SingletonTokenRef")
+    }
+}
+
+impl<T: ?Sized> PartialEq for SingletonTokenRef<'_, T> {
+    fn eq(&self, _: &Self) -> bool {
+        false
+    }
+}
+
+impl<T: ?Sized> Eq for SingletonTokenRef<'_, T> {}
+
+impl<T: ?Sized> hash::Hash for SingletonTokenRef<'_, T> {
+    fn hash<H: hash::Hasher>(&self, _: &mut H) {}
+}
+
+impl<T: ?Sized> ops::Deref for SingletonTokenRef<'_, T> {
+    type Target = SingletonToken<T>;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        &SingletonToken(PhantomData)
+    }
+}
+
+/// Zero-sized logical equivalent of `&'a mut `[`SingletonToken`]`<T>`.
+///
+/// # Examples
+///
+/// ```
+/// # use tokenlock::*;
+/// let mut token = unsafe { SingletonToken::<u32>::new_unchecked() };
+/// let lock = TokenLock::new(token.id(), 1);
+///
+/// // `SingletonTokenRefMut` is zero-sized (unlike `&SingletonToken`), so there is
+/// // no runtime overhead involved with passing `SingletonTokenRefMut`.
+/// access_lock(token.borrow_mut(), &lock);
+///
+/// fn access_lock(
+///     mut token: SingletonTokenRefMut<'_, u32>,
+///     lock: &TokenLock<u32, SingletonTokenId<u32>>,
+/// ) {
+///     assert_eq!(*lock.read(&*token), 1);
+///     lock.replace(&mut *token, 2);
+/// }
+/// ```
+pub struct SingletonTokenRefMut<'a, T: ?Sized>(PhantomData<&'a mut SingletonToken<T>>);
+
+impl<T: ?Sized> fmt::Debug for SingletonTokenRefMut<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("SingletonTokenRefMut")
+    }
+}
+
+impl<T: ?Sized> PartialEq for SingletonTokenRefMut<'_, T> {
+    fn eq(&self, _: &Self) -> bool {
+        false
+    }
+}
+
+impl<T: ?Sized> Eq for SingletonTokenRefMut<'_, T> {}
+
+impl<T: ?Sized> hash::Hash for SingletonTokenRefMut<'_, T> {
+    fn hash<H: hash::Hasher>(&self, _: &mut H) {}
+}
+
+impl<T: ?Sized> ops::Deref for SingletonTokenRefMut<'_, T> {
+    type Target = SingletonToken<T>;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        &SingletonToken(PhantomData)
+    }
+}
+
+impl<T: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, T> {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // Logically borrow the original `SingletonToken`
+        // Safety: `Self` is zero-sized, so the returned reference does not
+        //         point to an invalid memory region.
+        unsafe { &mut *NonNull::dangling().as_ptr() }
     }
 }
 
