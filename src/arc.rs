@@ -5,7 +5,8 @@ use super::Token;
 /// An `Arc`-based unforgeable token used to access the contents of a
 /// `TokenLock`.
 ///
-/// This type is not `Clone` to ensure an exclusive access to [`TokenLock`].
+/// This type lacks a `Clone` implementation to ensure exclusive access to
+/// [`TokenLock`].
 ///
 /// [`TokenLock`]: crate::TokenLock
 #[derive(Debug, PartialEq, Eq, Hash)]
