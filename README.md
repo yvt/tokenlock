@@ -2,8 +2,8 @@
 
 [<img src="https://docs.rs/tokenlock/badge.svg" alt="docs.rs">](https://docs.rs/tokenlock/)
 
-Provides a cell type whose contents can be accessed only via an unforgeable
-token.
+This crate provides a cell type, `TokenLock`, whose contents can only be
+accessed by an unforgeable token.
 
 ## Examples
 

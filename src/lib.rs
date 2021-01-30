@@ -7,8 +7,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //
-//! Provides a cell type whose contents can be accessed only using an
-//! unforgeable token.
+//! This crate provides a cell type, [`TokenLock`], whose contents can only be
+//! accessed by an unforgeable token.
 //!
 //! # Examples
 //!
@@ -24,7 +24,7 @@
 //! *guard = 2;
 //! ```
 //!
-//! Only the original `Token`'s owner can access its contents. `Token`
+//! Only the original [`Token`]'s owner can access its contents. `Token`
 //! cannot be cloned:
 //!
 //! ```
