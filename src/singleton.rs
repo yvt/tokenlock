@@ -6,46 +6,47 @@ use super::Token;
 /// `TokenLock`.
 ///
 /// It's a singleton object, meaning there can be only one instance of
-/// `SingletonToken<T>` for each specific `T`. The instances of `SingletonToken`
-/// are solely distinguished by its type parameter, making this type zero-sized.
+/// `SingletonToken<Tag>` for each specific `Tag`. The instances of
+/// `SingletonToken` are solely distinguished by its type parameter `Tag`,
+/// making this type zero-sized.
 ///
 /// This type lacks a `Clone` implementation to ensure exclusive access to
 /// [`TokenLock`].
 ///
-/// This type is invariant over `T`.
+/// This type is invariant over `Tag`.
 ///
 /// [`TokenLock`]: crate::TokenLock
-pub struct SingletonToken<T: ?Sized>(PhantomData<Invariant<T>>);
+pub struct SingletonToken<Tag: ?Sized>(PhantomData<Invariant<Tag>>);
 
 // FIXME: Work-around for the construction of `PhantomData<fn(...)>` being
 //        unstable <https://github.com/rust-lang/rust/issues/67649>
-struct Invariant<T: ?Sized>(fn(&T) -> &T);
+struct Invariant<Tag: ?Sized>(fn(&Tag) -> &Tag);
 
-impl<T: ?Sized> fmt::Debug for SingletonToken<T> {
+impl<Tag: ?Sized> fmt::Debug for SingletonToken<Tag> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonToken")
     }
 }
 
-impl<T: ?Sized> PartialEq for SingletonToken<T> {
+impl<Tag: ?Sized> PartialEq for SingletonToken<Tag> {
     fn eq(&self, _: &Self) -> bool {
         false
     }
 }
 
-impl<T: ?Sized> Eq for SingletonToken<T> {}
+impl<Tag: ?Sized> Eq for SingletonToken<Tag> {}
 
-impl<T: ?Sized> hash::Hash for SingletonToken<T> {
+impl<Tag: ?Sized> hash::Hash for SingletonToken<Tag> {
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
 
-impl<T: ?Sized> SingletonToken<T> {
+impl<Tag: ?Sized> SingletonToken<Tag> {
     /// Construct `Self` without checking the singleton invariant.
     ///
     /// # Safety
     ///
-    /// Having more than one instance of `SingletonToken<T>` for a
-    /// particular `T` violates [`Token`]'s requirements and allows a
+    /// Having more than one instance of `SingletonToken<Tag>` for a
+    /// particular `Tag` violates [`Token`]'s requirements and allows a
     /// `TokenLock` to be mutably borrowed simultaneously, violating the pointer
     /// aliasing rules.
     #[inline(always)]
@@ -55,7 +56,7 @@ impl<T: ?Sized> SingletonToken<T> {
 
     /// Construct an [`SingletonTokenId`] that equates to `self`.
     #[inline(always)]
-    pub fn id(&self) -> SingletonTokenId<T> {
+    pub fn id(&self) -> SingletonTokenId<Tag> {
         SingletonTokenId(PhantomData)
     }
 
@@ -63,7 +64,7 @@ impl<T: ?Sized> SingletonToken<T> {
     ///
     /// `SingletonTokenRef` is truly zero-sized, so it's more efficient to
     /// store and pass than `&SingletonToken`.
-    pub fn borrow(&self) -> SingletonTokenRef<'_, T> {
+    pub fn borrow(&self) -> SingletonTokenRef<'_, Tag> {
         SingletonTokenRef(PhantomData)
     }
 
@@ -71,19 +72,19 @@ impl<T: ?Sized> SingletonToken<T> {
     ///
     /// `SingletonTokenRefMut` is truly zero-sized, so it's more efficient to
     /// store and pass than `&mut SingletonToken`.
-    pub fn borrow_mut(&mut self) -> SingletonTokenRefMut<'_, T> {
+    pub fn borrow_mut(&mut self) -> SingletonTokenRefMut<'_, Tag> {
         SingletonTokenRefMut(PhantomData)
     }
 }
 
-unsafe impl<T: ?Sized> Token<SingletonTokenId<T>> for SingletonToken<T> {
+unsafe impl<Tag: ?Sized> Token<SingletonTokenId<Tag>> for SingletonToken<Tag> {
     #[inline(always)]
-    fn eq_id(&self, _: &SingletonTokenId<T>) -> bool {
+    fn eq_id(&self, _: &SingletonTokenId<Tag>) -> bool {
         true
     }
 }
 
-/// Zero-sized logical equivalent of `&'a `[`SingletonToken`]`<T>`.
+/// Zero-sized logical equivalent of `&'a `[`SingletonToken`]`<Tag>`.
 ///
 /// # Examples
 ///
@@ -105,28 +106,28 @@ unsafe impl<T: ?Sized> Token<SingletonTokenId<T>> for SingletonToken<T> {
 ///     assert_eq!(*lock.read(&*token), 1);
 /// }
 /// ```
-pub struct SingletonTokenRef<'a, T: ?Sized>(PhantomData<&'a SingletonToken<T>>);
+pub struct SingletonTokenRef<'a, Tag: ?Sized>(PhantomData<&'a SingletonToken<Tag>>);
 
-impl<T: ?Sized> fmt::Debug for SingletonTokenRef<'_, T> {
+impl<Tag: ?Sized> fmt::Debug for SingletonTokenRef<'_, Tag> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonTokenRef")
     }
 }
 
-impl<T: ?Sized> PartialEq for SingletonTokenRef<'_, T> {
+impl<Tag: ?Sized> PartialEq for SingletonTokenRef<'_, Tag> {
     fn eq(&self, _: &Self) -> bool {
         false
     }
 }
 
-impl<T: ?Sized> Eq for SingletonTokenRef<'_, T> {}
+impl<Tag: ?Sized> Eq for SingletonTokenRef<'_, Tag> {}
 
-impl<T: ?Sized> hash::Hash for SingletonTokenRef<'_, T> {
+impl<Tag: ?Sized> hash::Hash for SingletonTokenRef<'_, Tag> {
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
 
-impl<T: ?Sized> ops::Deref for SingletonTokenRef<'_, T> {
-    type Target = SingletonToken<T>;
+impl<Tag: ?Sized> ops::Deref for SingletonTokenRef<'_, Tag> {
+    type Target = SingletonToken<Tag>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -134,7 +135,7 @@ impl<T: ?Sized> ops::Deref for SingletonTokenRef<'_, T> {
     }
 }
 
-/// Zero-sized logical equivalent of `&'a mut `[`SingletonToken`]`<T>`.
+/// Zero-sized logical equivalent of `&'a mut `[`SingletonToken`]`<Tag>`.
 ///
 /// # Examples
 ///
@@ -157,28 +158,28 @@ impl<T: ?Sized> ops::Deref for SingletonTokenRef<'_, T> {
 ///     lock.replace(&mut *token, 2);
 /// }
 /// ```
-pub struct SingletonTokenRefMut<'a, T: ?Sized>(PhantomData<&'a mut SingletonToken<T>>);
+pub struct SingletonTokenRefMut<'a, Tag: ?Sized>(PhantomData<&'a mut SingletonToken<Tag>>);
 
-impl<T: ?Sized> fmt::Debug for SingletonTokenRefMut<'_, T> {
+impl<Tag: ?Sized> fmt::Debug for SingletonTokenRefMut<'_, Tag> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonTokenRefMut")
     }
 }
 
-impl<T: ?Sized> PartialEq for SingletonTokenRefMut<'_, T> {
+impl<Tag: ?Sized> PartialEq for SingletonTokenRefMut<'_, Tag> {
     fn eq(&self, _: &Self) -> bool {
         false
     }
 }
 
-impl<T: ?Sized> Eq for SingletonTokenRefMut<'_, T> {}
+impl<Tag: ?Sized> Eq for SingletonTokenRefMut<'_, Tag> {}
 
-impl<T: ?Sized> hash::Hash for SingletonTokenRefMut<'_, T> {
+impl<Tag: ?Sized> hash::Hash for SingletonTokenRefMut<'_, Tag> {
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
 
-impl<T: ?Sized> ops::Deref for SingletonTokenRefMut<'_, T> {
-    type Target = SingletonToken<T>;
+impl<Tag: ?Sized> ops::Deref for SingletonTokenRefMut<'_, Tag> {
+    type Target = SingletonToken<Tag>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -186,7 +187,7 @@ impl<T: ?Sized> ops::Deref for SingletonTokenRefMut<'_, T> {
     }
 }
 
-impl<T: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, T> {
+impl<Tag: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, Tag> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // Logically borrow the original `SingletonToken`
@@ -201,7 +202,7 @@ impl<T: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, T> {
 ///
 /// [`TokenLock`]: crate::TokenLock
 ///
-/// This type is invariant over `T`.
+/// This type is invariant over `Tag`.
 ///
 /// # Examples
 ///
@@ -217,30 +218,30 @@ impl<T: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, T> {
 /// let lock2 = TokenLock::new(token_id, 2);
 /// ```
 ///
-pub struct SingletonTokenId<T: ?Sized>(PhantomData<fn(T) -> T>);
+pub struct SingletonTokenId<Tag: ?Sized>(PhantomData<fn(Tag) -> Tag>);
 
-impl<T: ?Sized> fmt::Debug for SingletonTokenId<T> {
+impl<Tag: ?Sized> fmt::Debug for SingletonTokenId<Tag> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonTokenId")
     }
 }
 
-impl<T: ?Sized> Clone for SingletonTokenId<T> {
+impl<Tag: ?Sized> Clone for SingletonTokenId<Tag> {
     fn clone(&self) -> Self {
         Self(PhantomData)
     }
 }
 
-impl<T: ?Sized> Copy for SingletonTokenId<T> {}
+impl<Tag: ?Sized> Copy for SingletonTokenId<Tag> {}
 
-impl<T: ?Sized> PartialEq for SingletonTokenId<T> {
+impl<Tag: ?Sized> PartialEq for SingletonTokenId<Tag> {
     fn eq(&self, _: &Self) -> bool {
         false
     }
 }
 
-impl<T: ?Sized> Eq for SingletonTokenId<T> {}
+impl<Tag: ?Sized> Eq for SingletonTokenId<Tag> {}
 
-impl<T: ?Sized> hash::Hash for SingletonTokenId<T> {
+impl<Tag: ?Sized> hash::Hash for SingletonTokenId<Tag> {
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }

@@ -5,8 +5,8 @@ use crate::singleton::SingletonToken;
 /// The RAII guard for a [`SingletonToken`] obtained through
 /// [`SingletonToken::new`]. Returns the token to the factory automatically
 /// when dropped.
-pub struct SingletonTokenGuard<T: ?Sized + SingletonTokenFactory> {
-    token: SingletonToken<T>,
+pub struct SingletonTokenGuard<Tag: ?Sized + SingletonTokenFactory> {
+    token: SingletonToken<Tag>,
 }
 
 /// Associates a type with a flag indicating whether an instance of
@@ -57,15 +57,15 @@ macro_rules! impl_singleton_token_factory {
     };
 }
 
-impl<T: ?Sized + SingletonTokenFactory> Drop for SingletonTokenGuard<T> {
+impl<Tag: ?Sized + SingletonTokenFactory> Drop for SingletonTokenGuard<Tag> {
     fn drop(&mut self) {
         // Safety: This call is accompanied with the destruction of `self.token`.
-        unsafe { T::r#return() };
+        unsafe { Tag::r#return() };
     }
 }
 
-impl<T: ?Sized + SingletonTokenFactory> ops::Deref for SingletonTokenGuard<T> {
-    type Target = SingletonToken<T>;
+impl<Tag: ?Sized + SingletonTokenFactory> ops::Deref for SingletonTokenGuard<Tag> {
+    type Target = SingletonToken<Tag>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -73,7 +73,7 @@ impl<T: ?Sized + SingletonTokenFactory> ops::Deref for SingletonTokenGuard<T> {
     }
 }
 
-impl<T: ?Sized + SingletonTokenFactory> ops::DerefMut for SingletonTokenGuard<T> {
+impl<Tag: ?Sized + SingletonTokenFactory> ops::DerefMut for SingletonTokenGuard<Tag> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.token
@@ -100,8 +100,8 @@ impl fmt::Display for SingletonTokenExhaustedError {
     }
 }
 
-impl<T: ?Sized + SingletonTokenFactory> SingletonToken<T> {
-    /// Construct `Self`, using `T`'s [`SingletonTokenFactory`] implementation
+impl<Tag: ?Sized + SingletonTokenFactory> SingletonToken<Tag> {
+    /// Construct `Self`, using `Tag`'s [`SingletonTokenFactory`] implementation
     /// to ensure only one token is present at once.
     ///
     /// Returns an RAII guard that derefs to `SingletonToken` and returns the
@@ -132,10 +132,10 @@ impl<T: ?Sized + SingletonTokenFactory> SingletonToken<T> {
     /// let token = SingletonToken::<MyTag>::new().unwrap();
     /// assert!(SingletonToken::<MyTag>::new().is_err());
     /// ```
-    pub fn new() -> Result<SingletonTokenGuard<T>, SingletonTokenExhaustedError> {
-        if T::take() {
+    pub fn new() -> Result<SingletonTokenGuard<Tag>, SingletonTokenExhaustedError> {
+        if Tag::take() {
             Ok(SingletonTokenGuard {
-                // Safety: We established by calling `T::take` that the token
+                // Safety: We established by calling `Tag::take` that the token
                 //         doesn't exist yet
                 token: unsafe { SingletonToken::new_unchecked() },
             })
