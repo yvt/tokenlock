@@ -175,8 +175,9 @@ mod rc;
 #[cfg(feature = "std")]
 pub use self::{arc::*, rc::*};
 
-mod singleton;
 mod singleton_factory;
+
+mod singleton;
 pub use self::{singleton::*, singleton_factory::*};
 
 /// Trait for an unforgeable token used to access the contents of a
