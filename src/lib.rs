@@ -129,7 +129,7 @@ pub unsafe trait Token<Keyhole> {
 }
 
 /// A mutual exclusive primitive that can be accessed using a [`Token`]`<Keyhole>`
-/// with a very low over-head.
+/// with a very low overhead.
 ///
 /// See the [module-level documentation] for more details.
 ///
