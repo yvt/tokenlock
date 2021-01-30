@@ -106,6 +106,54 @@
 //! [`SingletonToken::new`]. Alternatively, you can use
 //! [`SingletonToken::new_unchecked`], but this is unsafe if misused.
 //!
+//! # `!Sync` tokens
+//!
+//! [`UnsyncTokenLock`] is similar to `TokenLock` but designed for non-`Sync`
+//! tokens and has relaxed requirements on the inner type for thread safety.
+//! Specifically, it can be `Sync` even if the inner type is not `Sync`. This
+//! allows for storing non-`Sync` cells such as [`Cell`] and reading and
+//! writing them using shared references (all of which must be on the same
+//! thread because the token is `!Sync`) to the token.
+//!
+//! [`Cell`]: crate::std_core::cell::Cell
+//!
+//! ```
+//! # use tokenlock::*;
+//! # use std::thread;
+//! # use std::sync::Arc;
+//! use std::cell::Cell;
+//! let mut token = ArcToken::new();
+//! let lock = Arc::new(UnsyncTokenLock::new(token.id(), Cell::new(1)));
+//!
+//! let lock_1 = Arc::clone(&lock);
+//! thread::Builder::new().spawn(move || {
+//!     // "Lock" the token to the current thread using
+//!     // `ArcToken::borrow_as_unsync`
+//!     let token = token.borrow_as_unsync();
+//!
+//!     // Shared references can alias
+//!     let (token_1, token_2) = (&token, &token);
+//!
+//!     lock_1.read(token_1).set(2);
+//!     lock_1.read(token_2).set(4);
+//! }).unwrap();
+//! ```
+//!
+//! `!Sync` tokens, of course, cannot be shared between threads:
+//!
+//! ```compile_fail
+//! # use tokenlock::*;
+//! # use std::thread;
+//! let mut token = ArcToken::new();
+//! let token = token.borrow_as_unsync();
+//! let (token_1, token_2) = (&token, &token);
+//!
+//! thread::Builder::new().spawn(move || {
+//!     let _ = token_2;
+//! });
+//!
+//! let _ = token_1;
+//! ```
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
@@ -143,6 +191,15 @@ pub unsafe trait Token<Keyhole> {
     fn eq_id(&self, id: &Keyhole) -> bool;
 }
 
+/// Asserts the types implementing this trait are `!`[`Sync`]. (Negative bounds
+/// are not supported by the compiler at the point of writing, so this trait
+/// must be implemented manually.)
+///
+/// # Safety
+///
+/// `Self` must really be `!Sync`.
+pub unsafe trait Unsync {}
+
 /// A mutual exclusive primitive that can be accessed using a [`Token`]`<Keyhole>`
 /// with a very low overhead.
 ///
@@ -159,6 +216,25 @@ pub struct TokenLock<T: ?Sized, Keyhole> {
 //         `T` does, so it can just inherit `T`'s `Send`-ness and `Sync`-ness
 unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for TokenLock<T, Keyhole> {}
 unsafe impl<T: ?Sized + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhole> {}
+
+/// Like [`TokenLock`], but the usable [`Token`]s are constrained by [`Unsync`].
+/// This subtle difference allows it to be `Sync` even if `T` is not.
+///
+/// See the [module-level documentation] for more details.
+///
+/// [module-level documentation]: index.html#sync-tokens
+#[derive(Default)]
+pub struct UnsyncTokenLock<T: ?Sized, Keyhole> {
+    keyhole: Keyhole,
+    data: UnsafeCell<T>,
+}
+
+// Safety: In addition to what `TokenLock`'s guarantees, Non-`Sync`-ness of
+//         the `Token` prohibits `UnsyncTokenLock` from being simultaneously
+//         read by multiple threads. `T: Send` is still required because `T`
+//         can be moved out from any `&UnsyncTokenLock`.
+unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for UnsyncTokenLock<T, Keyhole> {}
+unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole> {}
 
 /// Error type returned when a key ([`Token`]) doesn't fit in a keyhole
 /// ([`TokenLock::keyhole`]).
@@ -180,7 +256,7 @@ impl fmt::Display for BadTokenError {
 }
 
 macro_rules! impl_common {
-    ($ty:ident, [$($token_bounds:tt)*]) => {
+    ($ty:ident, [$($token_read_bounds:tt)*]) => {
         impl<T: ?Sized, Keyhole: fmt::Debug> fmt::Debug for $ty<T, Keyhole> {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 f.debug_struct(stringify!($ty))
@@ -228,21 +304,21 @@ macro_rules! impl_common {
             /// Get a reference to the contained data. Panic if `token` doesn't fit in
             /// the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn read<'a, K: $($token_bounds)*>(&'a self, token: &'a K) -> &'a T {
+            pub fn read<'a, K: $($token_read_bounds)*>(&'a self, token: &'a K) -> &'a T {
                 self.try_read(token).unwrap()
             }
 
             /// Get a mutable reference to the contained data. Panic if `token` doesn't
             /// fit in the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn write<'a, K: $($token_bounds)*>(&'a self, token: &'a mut K) -> &'a mut T {
+            pub fn write<'a, K: Token<Keyhole>>(&'a self, token: &'a mut K) -> &'a mut T {
                 self.try_write(token).unwrap()
             }
 
             /// Get a reference to the contained data. Return `BadTokenError` if `token`
             /// doesn't fit in the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn try_read<'a, K: $($token_bounds)*>(
+            pub fn try_read<'a, K: $($token_read_bounds)*>(
                 &'a self,
                 token: &'a K,
             ) -> Result<&'a T, BadTokenError> {
@@ -256,7 +332,7 @@ macro_rules! impl_common {
             /// Get a mutable reference to the contained data. Return `BadTokenError` if
             /// `token` doesn't fit in the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn try_write<'a, K: $($token_bounds)*>(
+            pub fn try_write<'a, K: Token<Keyhole>>(
                 &'a self,
                 token: &'a mut K,
             ) -> Result<&'a mut T, BadTokenError> {
@@ -272,7 +348,7 @@ macro_rules! impl_common {
             /// Get the contained data by cloning. Panic if `token` doesn't fit in
             /// the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn get<K: $($token_bounds)*>(&self, token: &K) -> T
+            pub fn get<K: $($token_read_bounds)*>(&self, token: &K) -> T
             where
                 T: Clone,
             {
@@ -282,7 +358,7 @@ macro_rules! impl_common {
             /// Get the contained data by cloning. Return `BadTokenError` if `token`
             /// doesn't fit in the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn try_get<K: $($token_bounds)*>(&self, token: &K) -> Result<T, BadTokenError>
+            pub fn try_get<K: $($token_read_bounds)*>(&self, token: &K) -> Result<T, BadTokenError>
             where
                 T: Clone,
             {
@@ -292,7 +368,7 @@ macro_rules! impl_common {
             /// Take the contained data, leaving `Default::default()` in its place.
             /// Panic if `token` doesn't fit in the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn take<K: $($token_bounds)*>(&self, token: &mut K) -> T
+            pub fn take<K: Token<Keyhole>>(&self, token: &mut K) -> T
             where
                 T: Default,
             {
@@ -303,7 +379,7 @@ macro_rules! impl_common {
             /// Return `BadTokenError` if `token` doesn't fit in the
             /// [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn try_take<K: $($token_bounds)*>(&self, token: &mut K) -> Result<T, BadTokenError>
+            pub fn try_take<K: Token<Keyhole>>(&self, token: &mut K) -> Result<T, BadTokenError>
             where
                 T: Default,
             {
@@ -315,7 +391,7 @@ macro_rules! impl_common {
             ///
             /// This function corresponds to [`std::mem::replace`].
             #[inline]
-            pub fn replace<K: $($token_bounds)*>(&self, token: &mut K, t: T) -> T {
+            pub fn replace<K: Token<Keyhole>>(&self, token: &mut K, t: T) -> T {
                 std_core::mem::replace(self.write(token), t)
             }
 
@@ -325,7 +401,7 @@ macro_rules! impl_common {
             ///
             /// This function corresponds to [`std::mem::replace`].
             #[inline]
-            pub fn replace_with<K: $($token_bounds)*>(
+            pub fn replace_with<K: Token<Keyhole>>(
                 &self,
                 token: &mut K,
                 f: impl FnOnce(&mut T) -> T,
@@ -338,7 +414,7 @@ macro_rules! impl_common {
             ///
             /// This function corresponds to [`std::mem::replace`].
             #[inline]
-            pub fn try_replace_with<K: $($token_bounds)*>(
+            pub fn try_replace_with<K: Token<Keyhole>>(
                 &self,
                 token: &mut K,
                 f: impl FnOnce(&mut T) -> T,
@@ -354,7 +430,7 @@ macro_rules! impl_common {
             ///
             /// This function corresponds to [`std::mem::swap`].
             #[inline]
-            pub fn swap<IOther, K: $($token_bounds)* + Token<IOther>>(
+            pub fn swap<IOther, K: Token<Keyhole> + Token<IOther>>(
                 &self,
                 token: &mut K,
                 other: &$ty<T, IOther>,
@@ -368,7 +444,7 @@ macro_rules! impl_common {
             #[inline]
             pub fn try_swap<
                 IOther,
-                K: $($token_bounds)* + Token<IOther>>(
+                K: Token<Keyhole> + Token<IOther>>(
                 &self,
                 token: &mut K,
                 other: &$ty<T, IOther>,
@@ -390,7 +466,7 @@ macro_rules! impl_common {
             /// Clone `self`. Panic if `token` doesn't fit in the
             /// [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn clone<K: $($token_bounds)*>(&self, token: &K) -> Self {
+            pub fn clone<K: $($token_read_bounds)*>(&self, token: &K) -> Self {
                 let value = self.get(token);
                 Self::new(self.keyhole.clone(), value)
             }
@@ -398,7 +474,7 @@ macro_rules! impl_common {
             /// Clone `self`. Return `BadTokenError` if `token` doesn't fit in
             /// the [`keyhole`](Self::keyhole).
             #[inline]
-            pub fn try_clone<K: $($token_bounds)*>(&self, token: &K) -> Result<Self, BadTokenError> {
+            pub fn try_clone<K: $($token_read_bounds)*>(&self, token: &K) -> Result<Self, BadTokenError> {
                 let value = self.try_get(token)?;
                 Ok(Self::new(self.keyhole.clone(), value))
             }
@@ -406,7 +482,11 @@ macro_rules! impl_common {
     };
 }
 
+// `UnsyncTokenLock` has an extra `Unsync` bound on the token when a shared
+// reference to a token is given. `Unsync` is not necessary if it's a mutable
+// reference because a mutable reference prohibits aliasing.
 impl_common!(TokenLock, [Token<Keyhole>]);
+impl_common!(UnsyncTokenLock, [Token<Keyhole> + Unsync]);
 
 #[test]
 #[cfg(feature = "std")]
@@ -425,5 +505,25 @@ fn bad_token() {
     let token1 = ArcToken::new();
     let mut token2 = ArcToken::new();
     let lock = TokenLock::new(token1.id(), 1);
+    assert_eq!(lock.try_write(&mut token2), Err(BadTokenError));
+}
+
+#[test]
+#[cfg(feature = "std")]
+fn unsend_basic() {
+    let mut token = RcToken::new();
+    let lock = UnsyncTokenLock::new(token.id(), 1);
+    assert_eq!(*lock.read(&token), 1);
+
+    let guard = lock.write(&mut token);
+    assert_eq!(*guard, 1);
+}
+
+#[test]
+#[cfg(feature = "std")]
+fn unsend_bad_token() {
+    let token1 = RcToken::new();
+    let mut token2 = RcToken::new();
+    let lock = UnsyncTokenLock::new(token1.id(), 1);
     assert_eq!(lock.try_write(&mut token2), Err(BadTokenError));
 }

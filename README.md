@@ -83,5 +83,48 @@ instance can exist at any point of time during the program's execution.
 `SingletonToken::new`. Alternatively, you can use
 `SingletonToken::new_unchecked`, but this is unsafe if misused.
 
+## `!Sync` tokens
+
+`UnsyncTokenLock` is similar to `TokenLock` but designed for non-`Sync`
+tokens and has relaxed requirements on the inner type for thread safety.
+Specifically, it can be `Sync` even if the inner type is not `Sync`. This
+allows for storing non-`Sync` cells such as `Cell` and reading and
+writing them using shared references (all of which must be on the same
+thread because the token is `!Sync`) to the token.
+
+```rust
+use std::cell::Cell;
+let mut token = ArcToken::new();
+let lock = Arc::new(UnsyncTokenLock::new(token.id(), Cell::new(1)));
+
+let lock_1 = Arc::clone(&lock);
+thread::Builder::new().spawn(move || {
+    // "Lock" the token to the current thread using
+    // `ArcToken::borrow_as_unsync`
+    let token = token.borrow_as_unsync();
+
+    // Shared references can alias
+    let (token_1, token_2) = (&token, &token);
+
+    lock_1.read(token_1).set(2);
+    lock_1.read(token_2).set(4);
+}).unwrap();
+```
+
+`!Sync` tokens, of course, cannot be shared between threads:
+
+```rust
+# use tokenlock::*;
+# use std::thread;
+let mut token = ArcToken::new();
+let token = token.borrow_as_unsync();
+let (token_1, token_2) = (&token, &token);
+
+thread::Builder::new().spawn(move || {
+    let _ = token_2;
+});
+
+let _ = token_1;
+```
 
 License: MIT/Apache-2.0

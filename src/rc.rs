@@ -1,6 +1,6 @@
 use std::{hash, rc::Rc};
 
-use super::Token;
+use super::{Token, Unsync};
 
 /// An `Rc`-based unforgeable token used to access the contents of a
 /// `TokenLock`.
@@ -34,6 +34,8 @@ unsafe impl Token<RcTokenId> for RcToken {
         self.0 == id.0
     }
 }
+
+unsafe impl Unsync for RcToken {}
 
 /// Token that cannot be used to access the contents of a [`TokenLock`], but can
 /// be used to create a new `TokenLock`.
