@@ -85,7 +85,9 @@ unsafe impl<T: ?Sized> Token<SingletonTokenId<T>> for SingletonToken<T> {
 ///
 /// ```
 /// # use tokenlock::*;
-/// let token = unsafe { SingletonToken::<u32>::new_unchecked() };
+/// struct MyTag;
+/// impl_singleton_token_factory!(MyTag);
+/// let token = SingletonToken::<MyTag>::new().unwrap();
 /// let lock = TokenLock::new(token.id(), 1);
 ///
 /// // `SingletonTokenRef` is zero-sized (unlike `&SingletonToken`), so there is
@@ -93,8 +95,8 @@ unsafe impl<T: ?Sized> Token<SingletonTokenId<T>> for SingletonToken<T> {
 /// access_lock(token.borrow(), &lock);
 ///
 /// fn access_lock(
-///     token: SingletonTokenRef<'_, u32>,
-///     lock: &TokenLock<u32, SingletonTokenId<u32>>,
+///     token: SingletonTokenRef<'_, MyTag>,
+///     lock: &TokenLock<u32, SingletonTokenId<MyTag>>,
 /// ) {
 ///     assert_eq!(*lock.read(&*token), 1);
 /// }
@@ -134,7 +136,9 @@ impl<T: ?Sized> ops::Deref for SingletonTokenRef<'_, T> {
 ///
 /// ```
 /// # use tokenlock::*;
-/// let mut token = unsafe { SingletonToken::<u32>::new_unchecked() };
+/// struct MyTag;
+/// impl_singleton_token_factory!(MyTag);
+/// let mut token = SingletonToken::<MyTag>::new().unwrap();
 /// let lock = TokenLock::new(token.id(), 1);
 ///
 /// // `SingletonTokenRefMut` is zero-sized (unlike `&SingletonToken`), so there is
@@ -142,8 +146,8 @@ impl<T: ?Sized> ops::Deref for SingletonTokenRef<'_, T> {
 /// access_lock(token.borrow_mut(), &lock);
 ///
 /// fn access_lock(
-///     mut token: SingletonTokenRefMut<'_, u32>,
-///     lock: &TokenLock<u32, SingletonTokenId<u32>>,
+///     mut token: SingletonTokenRefMut<'_, MyTag>,
+///     lock: &TokenLock<u32, SingletonTokenId<MyTag>>,
 /// ) {
 ///     assert_eq!(*lock.read(&*token), 1);
 ///     lock.replace(&mut *token, 2);
@@ -201,7 +205,9 @@ impl<T: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, T> {
 ///
 /// ```
 /// # use tokenlock::*;
-/// let token = unsafe { SingletonToken::<u32>::new_unchecked() };
+/// struct MyTag;
+/// impl_singleton_token_factory!(MyTag);
+/// let token = SingletonToken::<MyTag>::new().unwrap();
 /// let token_id = token.id();
 /// let lock1 = TokenLock::new(token_id.clone(), 1);
 /// let lock2 = TokenLock::new(token_id, 2);

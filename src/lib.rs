@@ -95,9 +95,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
-use core as std_core;
+#[doc(hidden)]
+pub extern crate core as std_core;
 #[cfg(feature = "std")]
-use std as std_core;
+#[doc(hidden)]
+pub extern crate std as std_core;
 
 use self::std_core::cell::UnsafeCell;
 use self::std_core::fmt;
@@ -110,7 +112,8 @@ mod rc;
 pub use self::{arc::*, rc::*};
 
 mod singleton;
-pub use self::singleton::*;
+mod singleton_factory;
+pub use self::{singleton::*, singleton_factory::*};
 
 /// Trait for an unforgeable token used to access the contents of a
 /// [`TokenLock`].
