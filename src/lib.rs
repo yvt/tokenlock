@@ -215,7 +215,7 @@ pub struct TokenLock<T: ?Sized, Keyhole> {
 // Safety: `TokenLock` does not allow more multi-thread uses of `T` than a bare
 //         `T` does, so it can just inherit `T`'s `Send`-ness and `Sync`-ness
 unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for TokenLock<T, Keyhole> {}
-unsafe impl<T: ?Sized + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhole> {}
+unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhole> {}
 
 /// Like [`TokenLock`], but the usable [`Token`]s are constrained by [`Unsync`].
 /// This subtle difference allows it to be `Sync` even if `T` is not.
