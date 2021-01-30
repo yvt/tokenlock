@@ -15,7 +15,11 @@ use super::Token;
 /// This type is invariant over `T`.
 ///
 /// [`TokenLock`]: crate::TokenLock
-pub struct SingletonToken<T: ?Sized>(PhantomData<fn(T) -> T>);
+pub struct SingletonToken<T: ?Sized>(PhantomData<Invariant<T>>);
+
+// FIXME: Work-around for the construction of `PhantomData<fn(...)>` being
+//        unstable <https://github.com/rust-lang/rust/issues/67649>
+struct Invariant<T: ?Sized>(fn(&T) -> &T);
 
 impl<T: ?Sized> fmt::Debug for SingletonToken<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -45,7 +49,7 @@ impl<T: ?Sized> SingletonToken<T> {
     /// `TokenLock` to be mutably borrowed simultaneously, violating the pointer
     /// aliasing rules.
     #[inline(always)]
-    pub unsafe fn new_unchecked() -> Self {
+    pub const unsafe fn new_unchecked() -> Self {
         Self(PhantomData)
     }
 
