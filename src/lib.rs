@@ -116,32 +116,35 @@ mod singleton_factory;
 pub use self::{singleton::*, singleton_factory::*};
 
 /// Trait for an unforgeable token used to access the contents of a
-/// [`TokenLock`].
+/// [`TokenLock`]`<_, Keyhole>`.
+///
+/// A token can "open" a `TokenLock` only if the token matches the metaphorical
+/// keyhole.
 ///
 /// # Safety
 ///
 /// Given two distinct instances of `T: Token` `x` and `y`,
 /// `x.eq_id(i) && y.eq_id(i)` must not be `true` for any `i`.
-pub unsafe trait Token<I> {
-    fn eq_id(&self, id: &I) -> bool;
+pub unsafe trait Token<Keyhole> {
+    fn eq_id(&self, id: &Keyhole) -> bool;
 }
 
-/// A mutual exclusive primitive that can be accessed using a [`Token`]`<I>`
+/// A mutual exclusive primitive that can be accessed using a [`Token`]`<Keyhole>`
 /// with a very low over-head.
 ///
 /// See the [module-level documentation] for more details.
 ///
 /// [module-level documentation]: index.html
 #[derive(Default)]
-pub struct TokenLock<T: ?Sized, I> {
-    keyhole: I,
+pub struct TokenLock<T: ?Sized, Keyhole> {
+    keyhole: Keyhole,
     data: UnsafeCell<T>,
 }
 
-unsafe impl<T: ?Sized + Send + Sync, I: Send> Send for TokenLock<T, I> {}
-unsafe impl<T: ?Sized + Send + Sync, I: Sync> Sync for TokenLock<T, I> {}
+unsafe impl<T: ?Sized + Send + Sync, Keyhole: Send> Send for TokenLock<T, Keyhole> {}
+unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhole> {}
 
-impl<T: ?Sized, I: fmt::Debug> fmt::Debug for TokenLock<T, I> {
+impl<T: ?Sized, Keyhole: fmt::Debug> fmt::Debug for TokenLock<T, Keyhole> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("TokenLock")
             .field("keyhole", &self.keyhole)
@@ -168,9 +171,9 @@ impl fmt::Display for BadTokenError {
     }
 }
 
-impl<T, I> TokenLock<T, I> {
+impl<T, Keyhole> TokenLock<T, Keyhole> {
     /// Construct a `TokenLock`.
-    pub const fn new(keyhole: I, data: T) -> Self {
+    pub const fn new(keyhole: Keyhole, data: T) -> Self {
         Self {
             keyhole,
             data: UnsafeCell::new(data),
@@ -183,10 +186,10 @@ impl<T, I> TokenLock<T, I> {
     }
 }
 
-impl<T: ?Sized, I> TokenLock<T, I> {
-    /// Get a reference to the contained `I` (keyhole).
+impl<T: ?Sized, Keyhole> TokenLock<T, Keyhole> {
+    /// Get a reference to the contained `Keyhole` (keyhole).
     #[inline]
-    pub const fn keyhole(&self) -> &I {
+    pub const fn keyhole(&self) -> &Keyhole {
         &self.keyhole
     }
 
@@ -205,21 +208,21 @@ impl<T: ?Sized, I> TokenLock<T, I> {
     /// Get a reference to the contained data. Panic if `token` doesn't fit in
     /// the [`keyhole`](TokenLock::keyhole).
     #[inline]
-    pub fn read<'a, K: Token<I>>(&'a self, token: &'a K) -> &'a T {
+    pub fn read<'a, K: Token<Keyhole>>(&'a self, token: &'a K) -> &'a T {
         self.try_read(token).unwrap()
     }
 
     /// Get a mutable reference to the contained data. Panic if `token` doesn't
     /// fit in the [`keyhole`](TokenLock::keyhole).
     #[inline]
-    pub fn write<'a, K: Token<I>>(&'a self, token: &'a mut K) -> &'a mut T {
+    pub fn write<'a, K: Token<Keyhole>>(&'a self, token: &'a mut K) -> &'a mut T {
         self.try_write(token).unwrap()
     }
 
     /// Get a reference to the contained data. Return `BadTokenError` if `token`
     /// doesn't fit in the [`keyhole`](TokenLock::keyhole).
     #[inline]
-    pub fn try_read<'a, K: Token<I>>(&'a self, token: &'a K) -> Result<&'a T, BadTokenError> {
+    pub fn try_read<'a, K: Token<Keyhole>>(&'a self, token: &'a K) -> Result<&'a T, BadTokenError> {
         if token.eq_id(&self.keyhole) {
             Ok(unsafe { &*self.data.get() })
         } else {
@@ -230,7 +233,7 @@ impl<T: ?Sized, I> TokenLock<T, I> {
     /// Get a mutable reference to the contained data. Return `BadTokenError` if
     /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
     #[inline]
-    pub fn try_write<'a, K: Token<I>>(
+    pub fn try_write<'a, K: Token<Keyhole>>(
         &'a self,
         token: &'a mut K,
     ) -> Result<&'a mut T, BadTokenError> {
@@ -242,10 +245,10 @@ impl<T: ?Sized, I> TokenLock<T, I> {
     }
 }
 
-impl<T, I> TokenLock<T, I> {
+impl<T, Keyhole> TokenLock<T, Keyhole> {
     /// Get the contained data by cloning. Panic if `token` doesn't fit in
     /// the [`keyhole`](TokenLock::keyhole).
-    pub fn get<K: Token<I>>(&self, token: &K) -> T
+    pub fn get<K: Token<Keyhole>>(&self, token: &K) -> T
     where
         T: Clone,
     {
@@ -254,7 +257,7 @@ impl<T, I> TokenLock<T, I> {
 
     /// Get the contained data by cloning. Return `BadTokenError` if `token`
     /// doesn't fit in the [`keyhole`](TokenLock::keyhole).
-    pub fn try_get<K: Token<I>>(&self, token: &K) -> Result<T, BadTokenError>
+    pub fn try_get<K: Token<Keyhole>>(&self, token: &K) -> Result<T, BadTokenError>
     where
         T: Clone,
     {
@@ -263,7 +266,7 @@ impl<T, I> TokenLock<T, I> {
 
     /// Take the contained data, leaving `Default::default()` in its place.
     /// Panic if `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
-    pub fn take<K: Token<I>>(&self, token: &mut K) -> T
+    pub fn take<K: Token<Keyhole>>(&self, token: &mut K) -> T
     where
         T: Default,
     {
@@ -273,7 +276,7 @@ impl<T, I> TokenLock<T, I> {
     /// Take the contained data, leaving `Default::default()` in its place.
     /// Return `BadTokenError` if `token` doesn't fit in the
     /// [`keyhole`](TokenLock::keyhole).
-    pub fn try_take<K: Token<I>>(&self, token: &mut K) -> Result<T, BadTokenError>
+    pub fn try_take<K: Token<Keyhole>>(&self, token: &mut K) -> Result<T, BadTokenError>
     where
         T: Default,
     {
@@ -284,7 +287,7 @@ impl<T, I> TokenLock<T, I> {
     /// in the [`keyhole`](TokenLock::keyhole).
     ///
     /// This function corresponds to [`std::mem::replace`].
-    pub fn replace<K: Token<I>>(&self, token: &mut K, t: T) -> T {
+    pub fn replace<K: Token<Keyhole>>(&self, token: &mut K, t: T) -> T {
         std_core::mem::replace(self.write(token), t)
     }
 
@@ -293,7 +296,7 @@ impl<T, I> TokenLock<T, I> {
     /// [`keyhole`](TokenLock::keyhole).
     ///
     /// This function corresponds to [`std::mem::replace`].
-    pub fn replace_with<K: Token<I>>(&self, token: &mut K, f: impl FnOnce(&mut T) -> T) -> T {
+    pub fn replace_with<K: Token<Keyhole>>(&self, token: &mut K, f: impl FnOnce(&mut T) -> T) -> T {
         self.try_replace_with(token, f).unwrap()
     }
 
@@ -301,7 +304,7 @@ impl<T, I> TokenLock<T, I> {
     /// `token` doesn't fit in the [`keyhole`](TokenLock::keyhole).
     ///
     /// This function corresponds to [`std::mem::replace`].
-    pub fn try_replace_with<K: Token<I>>(
+    pub fn try_replace_with<K: Token<Keyhole>>(
         &self,
         token: &mut K,
         f: impl FnOnce(&mut T) -> T,
@@ -316,7 +319,7 @@ impl<T, I> TokenLock<T, I> {
     /// `TokenLock`s.
     ///
     /// This function corresponds to [`std::mem::swap`].
-    pub fn swap<IOther, K: Token<I> + Token<IOther>>(
+    pub fn swap<IOther, K: Token<Keyhole> + Token<IOther>>(
         &self,
         token: &mut K,
         other: &TokenLock<T, IOther>,
@@ -327,7 +330,7 @@ impl<T, I> TokenLock<T, I> {
     /// Swap the contained data with the contained data of `other`. Return
     /// `BadTokenError` if `token` doesn't fit in the
     /// [`keyhole`](TokenLock::keyhole) of both `TokenLock`s.
-    pub fn try_swap<IOther, K: Token<I> + Token<IOther>>(
+    pub fn try_swap<IOther, K: Token<Keyhole> + Token<IOther>>(
         &self,
         token: &mut K,
         other: &TokenLock<T, IOther>,
@@ -345,17 +348,17 @@ impl<T, I> TokenLock<T, I> {
     }
 }
 
-impl<T: Clone, I: Clone> TokenLock<T, I> {
+impl<T: Clone, Keyhole: Clone> TokenLock<T, Keyhole> {
     /// Clone the `TokenLock`. Panic if `token` doesn't fit in the
     /// [`keyhole`](TokenLock::keyhole).
-    pub fn clone<K: Token<I>>(&self, token: &K) -> Self {
+    pub fn clone<K: Token<Keyhole>>(&self, token: &K) -> Self {
         let value = self.get(token);
         Self::new(self.keyhole.clone(), value)
     }
 
     /// Clone the `TokenLock`. Return `BadTokenError` if `token` doesn't fit in
     /// the [`keyhole`](TokenLock::keyhole).
-    pub fn try_clone<K: Token<I>>(&self, token: &K) -> Result<Self, BadTokenError> {
+    pub fn try_clone<K: Token<Keyhole>>(&self, token: &K) -> Result<Self, BadTokenError> {
         let value = self.try_get(token)?;
         Ok(Self::new(self.keyhole.clone(), value))
     }
