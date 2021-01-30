@@ -6,7 +6,7 @@ license = "MIT/Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/yvt/tokenlock"
 description = """
-Send-able cell type whose contents can be accessed only via an inforgeable token.
+Cell type whose contents can be accessed only using an unforgeable token.
 """
 keywords = ["token", "lock", "cell"]
 categories = ["rust-patterns", "no-std"]

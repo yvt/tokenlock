@@ -2,8 +2,8 @@
 
 [<img src="https://docs.rs/tokenlock/badge.svg" alt="docs.rs">](https://docs.rs/tokenlock/)
 
-Provides a `Send`-able cell type whose contents can be accessed only via an
-unforgeable token.
+Provides a cell type whose contents can be accessed only via an unforgeable
+token.
 
 ## Examples
 
@@ -18,9 +18,8 @@ assert_eq!(*guard, 1);
 *guard = 2;
 ```
 
-`TokenLock` implements `Send` and `Sync` so it can be shared between threads,
-but only the thread holding the original `Token` can access its contents.
-`Token` cannot be cloned:
+Only the original `Token`'s owner can access its contents. `Token`
+cannot be cloned:
 
 ```rust
 let lock = Arc::new(TokenLock::new(token.id(), 1));

@@ -7,7 +7,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //
-//! Provides a `Send`-able cell type whose contents can be accessed only via an
+//! Provides a cell type whose contents can be accessed only using an
 //! unforgeable token.
 //!
 //! # Examples
@@ -24,9 +24,8 @@
 //! *guard = 2;
 //! ```
 //!
-//! `TokenLock` implements `Send` and `Sync` so it can be shared between threads,
-//! but only the thread holding the original `Token` can access its contents.
-//! `Token` cannot be cloned:
+//! Only the original `Token`'s owner can access its contents. `Token`
+//! cannot be cloned:
 //!
 //! ```
 //! # use tokenlock::*;
