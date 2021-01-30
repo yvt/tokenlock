@@ -113,12 +113,19 @@ impl<Tag: ?Sized + SingletonTokenFactory> SingletonToken<Tag> {
     /// # use tokenlock::*;
     /// struct MyTag;
     /// impl_singleton_token_factory!(MyTag);
-    /// let mut token = SingletonToken::<MyTag>::new().unwrap();
-    /// let lock1 = TokenLock::new(token.id(), 1);
-    /// let lock2 = TokenLock::new(token.id(), 1);
     ///
-    /// lock1.read(&*token);
-    /// lock2.write(&mut *token);
+    /// type MyTokenLock<T> = TokenLock<T, SingletonTokenId<MyTag>>;
+    /// type MyToken = SingletonToken<MyTag>;
+    /// type MyTokenId = SingletonTokenId<MyTag>;
+    ///
+    /// static LOCK1: MyTokenLock<u32> = MyTokenLock::new(MyTokenId::new(), 1);
+    /// static LOCK2: MyTokenLock<u32> = MyTokenLock::new(MyTokenId::new(), 1);
+    ///
+    /// // Create a singleton token with a runtime uniqueness check
+    /// let mut token = MyToken::new().unwrap();
+    ///
+    /// LOCK1.read(&*token);
+    /// LOCK2.write(&mut *token);
     /// ```
     ///
     /// The `SingletonTokenFactory` implementation remembers that a token

@@ -218,7 +218,30 @@ impl<Tag: ?Sized> ops::DerefMut for SingletonTokenRefMut<'_, Tag> {
 /// let lock2 = TokenLock::new(token_id, 2);
 /// ```
 ///
-pub struct SingletonTokenId<Tag: ?Sized>(PhantomData<fn(Tag) -> Tag>);
+/// Unlike other token types, you don't need to construct `SingletonToken`
+/// first, actually:
+///
+/// ```
+/// # use tokenlock::*;
+/// struct MyTag;
+/// impl_singleton_token_factory!(MyTag);
+/// let lock1 = TokenLock::new(SingletonTokenId::<MyTag>::new(), 1);
+/// let lock2 = TokenLock::new(SingletonTokenId::<MyTag>::new(), 2);
+/// ```
+pub struct SingletonTokenId<Tag: ?Sized>(PhantomData<Invariant<Tag>>);
+
+impl<Tag: ?Sized> SingletonTokenId<Tag> {
+    /// Construct `Self`.
+    pub const fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<Tag: ?Sized> Default for SingletonTokenId<Tag> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl<Tag: ?Sized> fmt::Debug for SingletonTokenId<Tag> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
