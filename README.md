@@ -114,12 +114,12 @@ thread::Builder::new().spawn(move || {
 `!Sync` tokens, of course, cannot be shared between threads:
 
 ```rust
-# use tokenlock::*;
-# use std::thread;
 let mut token = ArcToken::new();
 let token = token.borrow_as_unsync();
 let (token_1, token_2) = (&token, &token);
 
+// compile error: `&ArcTokenUnsyncRef` is not `Send` because
+//                `ArcTokenUnsyncRef` is not `Sync`
 thread::Builder::new().spawn(move || {
     let _ = token_2;
 });
