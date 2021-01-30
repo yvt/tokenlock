@@ -91,6 +91,21 @@
 //! let read_guard1 = lock.read(&token);
 //! let read_guard2 = lock.read(&token);
 //! ```
+//!
+//! # Token types
+//!
+//! This crate provides the following types implementing [`Token`].
+//!
+//! (**`std` only**) [`RcToken`] and [`ArcToken`] ensure their uniqueness by
+//! reference-counted memory allocations.
+//!
+//! [`SingletonToken`]`<Tag>` is a singleton token, meaning only one of such
+//! instance can exist at any point of time during the program's execution.
+//! [`impl_singleton_token_factory!`] instantiates a `static` flag to indicate
+//! `SingletonToken`'s liveness and allows you to construct it safely by
+//! [`SingletonToken::new`]. Alternatively, you can use
+//! [`SingletonToken::new_unchecked`], but this is unsafe if misused.
+//!
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
