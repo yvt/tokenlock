@@ -1,13 +1,19 @@
-use crate::std_core::{fmt, ops};
+use crate::std_core::{fmt, mem, ops};
 
-use crate::singleton::SingletonToken;
+use crate::singleton::{SingletonToken, SingletonTokenVariant, SyncVariant, UnsyncVariant};
 
 /// The RAII guard for a [`SingletonToken`] obtained through
 /// [`SingletonToken::new`]. Returns the token to the factory automatically
 /// when dropped.
-pub struct SingletonTokenGuard<Tag: ?Sized + SingletonTokenFactory> {
-    token: SingletonToken<Tag>,
+///
+/// The second type parameter (`Variant`) is internal use only and exempt from
+/// the API stability guarantee.
+pub struct SingletonTokenGuard<Tag: ?Sized + SingletonTokenFactory, Variant = SyncVariant> {
+    token: SingletonToken<Tag, Variant>,
 }
+
+/// The `!Sync` variant of [`SingletonTokenGuard`].
+pub type UnsyncSingletonTokenGuard<Tag> = SingletonTokenGuard<Tag, UnsyncVariant>;
 
 /// Associates a type with a flag indicating whether an instance of
 /// [`SingletonToken`]`<Self>` is present.
@@ -57,15 +63,17 @@ macro_rules! impl_singleton_token_factory {
     };
 }
 
-impl<Tag: ?Sized + SingletonTokenFactory> Drop for SingletonTokenGuard<Tag> {
+impl<Tag: ?Sized + SingletonTokenFactory, Variant> Drop for SingletonTokenGuard<Tag, Variant> {
     fn drop(&mut self) {
         // Safety: This call is accompanied with the destruction of `self.token`.
         unsafe { Tag::r#return() };
     }
 }
 
-impl<Tag: ?Sized + SingletonTokenFactory> ops::Deref for SingletonTokenGuard<Tag> {
-    type Target = SingletonToken<Tag>;
+impl<Tag: ?Sized + SingletonTokenFactory, Variant: SingletonTokenVariant> ops::Deref
+    for SingletonTokenGuard<Tag, Variant>
+{
+    type Target = SingletonToken<Tag, Variant>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -73,7 +81,9 @@ impl<Tag: ?Sized + SingletonTokenFactory> ops::Deref for SingletonTokenGuard<Tag
     }
 }
 
-impl<Tag: ?Sized + SingletonTokenFactory> ops::DerefMut for SingletonTokenGuard<Tag> {
+impl<Tag: ?Sized + SingletonTokenFactory, Variant: SingletonTokenVariant> ops::DerefMut
+    for SingletonTokenGuard<Tag, Variant>
+{
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.token
@@ -100,7 +110,9 @@ impl fmt::Display for SingletonTokenExhaustedError {
     }
 }
 
-impl<Tag: ?Sized + SingletonTokenFactory> SingletonToken<Tag> {
+impl<Tag: ?Sized + SingletonTokenFactory, Variant: SingletonTokenVariant>
+    SingletonToken<Tag, Variant>
+{
     /// Construct `Self`, using `Tag`'s [`SingletonTokenFactory`] implementation
     /// to ensure only one token is present at once.
     ///
@@ -139,7 +151,7 @@ impl<Tag: ?Sized + SingletonTokenFactory> SingletonToken<Tag> {
     /// let token = SingletonToken::<MyTag>::new().unwrap();
     /// assert!(SingletonToken::<MyTag>::new().is_err());
     /// ```
-    pub fn new() -> Result<SingletonTokenGuard<Tag>, SingletonTokenExhaustedError> {
+    pub fn new() -> Result<SingletonTokenGuard<Tag, Variant>, SingletonTokenExhaustedError> {
         if Tag::take() {
             Ok(SingletonTokenGuard {
                 // Safety: We established by calling `Tag::take` that the token
@@ -148,6 +160,32 @@ impl<Tag: ?Sized + SingletonTokenFactory> SingletonToken<Tag> {
             })
         } else {
             Err(SingletonTokenExhaustedError)
+        }
+    }
+}
+
+impl<Tag: ?Sized + SingletonTokenFactory> SingletonTokenGuard<Tag> {
+    /// Convert `SingletonTokenGuard` to the `!Sync` variant.
+    pub fn into_unsync(self) -> UnsyncSingletonTokenGuard<Tag> {
+        // Suppress `self`'s destructor
+        mem::forget(self);
+
+        SingletonTokenGuard {
+            // Safety: The previous token has just been removed
+            token: unsafe { SingletonToken::new_unchecked() },
+        }
+    }
+}
+
+impl<Tag: ?Sized + SingletonTokenFactory> UnsyncSingletonTokenGuard<Tag> {
+    /// Convert `UnsyncSingletonToken` to the `Sync` variant.
+    pub fn into_sync(self) -> SingletonTokenGuard<Tag> {
+        // Suppress `self`'s destructor
+        mem::forget(self);
+
+        SingletonTokenGuard {
+            // Safety: The previous token has just been removed
+            token: unsafe { SingletonToken::new_unchecked() },
         }
     }
 }
