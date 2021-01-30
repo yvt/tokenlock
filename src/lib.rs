@@ -140,8 +140,10 @@ pub struct TokenLock<T: ?Sized, Keyhole> {
     data: UnsafeCell<T>,
 }
 
-unsafe impl<T: ?Sized + Send + Sync, Keyhole: Send> Send for TokenLock<T, Keyhole> {}
-unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhole> {}
+// Safety: `TokenLock` does not allow more multi-thread uses of `T` than a bare
+//         `T` does, so it can just inherit `T`'s `Send`-ness and `Sync`-ness
+unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for TokenLock<T, Keyhole> {}
+unsafe impl<T: ?Sized + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhole> {}
 
 impl<T: ?Sized, Keyhole: fmt::Debug> fmt::Debug for TokenLock<T, Keyhole> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
