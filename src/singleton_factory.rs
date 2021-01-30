@@ -1,4 +1,4 @@
-use crate::std_core::{fmt, mem, ops};
+use crate::std_core::{fmt, mem, ops, sync::atomic::AtomicBool};
 
 use crate::singleton::{SingletonToken, SingletonTokenVariant, SyncVariant, UnsyncVariant};
 
@@ -46,21 +46,39 @@ pub unsafe trait SingletonTokenFactory {
 /// compile on some targets.
 #[macro_export]
 macro_rules! impl_singleton_token_factory {
-    ($ty:ty) => {
-        const _: () = {
-            use $crate::std_core::sync::atomic::{AtomicBool, Ordering};
-            static TOKEN_ISSUED: AtomicBool = AtomicBool::new(false);
-
-            unsafe impl $crate::SingletonTokenFactory for $ty {
-                fn take() -> bool {
-                    !TOKEN_ISSUED.swap(true, Ordering::Acquire)
-                }
-                unsafe fn r#return() {
-                    TOKEN_ISSUED.store(false, Ordering::Release);
-                }
+    ($ty:ty $(,)*) => {
+        impl $crate::SingletonTokenFactoryStorage for $ty {
+            unsafe fn __stfs_token_issued() -> &'static $crate::std_core::sync::atomic::AtomicBool {
+                use $crate::std_core::sync::atomic::AtomicBool;
+                static TOKEN_ISSUED: AtomicBool = AtomicBool::new(false);
+                &TOKEN_ISSUED
             }
-        };
+        }
+
+        unsafe impl $crate::SingletonTokenFactory for $ty {
+            fn take() -> bool {
+                use $crate::std_core::sync::atomic::Ordering;
+                let token_issued =
+                    unsafe { <$ty as $crate::SingletonTokenFactoryStorage>::__stfs_token_issued() };
+                !token_issued.swap(true, Ordering::Acquire)
+            }
+            // The inner `unsafe` block is redundant only if `unsafe_op_in_unsafe_fn`
+            // (https://github.com/rust-lang/rust/issues/71668) is set to "allow".
+            #[allow(unused_unsafe)]
+            unsafe fn r#return() {
+                use $crate::std_core::sync::atomic::Ordering;
+                let token_issued =
+                    unsafe { <$ty as $crate::SingletonTokenFactoryStorage>::__stfs_token_issued() };
+                token_issued.store(false, Ordering::Release);
+            }
+        }
     };
+}
+
+/// Internal use only
+#[doc(hidden)]
+pub trait SingletonTokenFactoryStorage {
+    unsafe fn __stfs_token_issued() -> &'static AtomicBool;
 }
 
 impl<Tag: ?Sized + SingletonTokenFactory, Variant> Drop for SingletonTokenGuard<Tag, Variant> {
