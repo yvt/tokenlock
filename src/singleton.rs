@@ -234,11 +234,91 @@ unsafe impl<Tag: ?Sized> Unsync for UnsyncSingletonToken<Tag> {}
 ///     assert_eq!(*lock.read(&*token), 1);
 /// }
 /// ```
+///
+/// `SingletonTokenRef` does not allow mutable borrow:
+///
+/// ```rust,compile_fail
+/// # use tokenlock::*;
+/// # struct MyTag;
+/// # impl_singleton_token_factory!(MyTag);
+/// # let token = SingletonToken::<MyTag>::new().unwrap();
+/// # let lock = TokenLock::new(token.id(), 1);
+/// let token_ref: SingletonTokenRef<MyTag> = token.borrow();
+///
+/// // compile error: `SingletonTokenRef` does not implement `DerefMut`
+/// *lock.write(&mut *token_ref) = 4;
+/// ```
+///
+/// `SingletonTokenRef` is `Send`-able because [`SingletonToken`] is `Sync`:
+///
+/// ```rust
+/// # use tokenlock::*;
+/// # struct MyTag;
+/// # impl_singleton_token_factory!(MyTag);
+/// let token: &'static SingletonTokenGuard<MyTag> =
+///     Box::leak(Box::new(SingletonToken::<MyTag>::new().unwrap()));
+/// let token_ref: SingletonTokenRef<MyTag> = token.borrow();
+/// std::thread::spawn(move || {
+///     let _token_ref = token_ref;
+/// });
+/// ```
 pub struct SingletonTokenRef<'a, Tag: ?Sized, Variant = SyncVariant>(
     PhantomData<&'a SingletonToken<Tag, Variant>>,
 );
 
-/// The `!Sync` variant of [`SingletonTokenRef`].
+/// Zero-sized logical equivalent of `&'a `[`UnsyncSingletonToken`]`<Tag>`. The
+/// `!Sync` variant of [`SingletonTokenRef`].
+///
+/// # Examples
+///
+/// ```
+/// # use tokenlock::*;
+/// struct MyTag;
+/// impl_singleton_token_factory!(MyTag);
+/// let token = UnsyncSingletonToken::<MyTag>::new().unwrap();
+/// let lock = UnsyncTokenLock::new(token.id(), 1);
+///
+/// // `UnsyncSingletonTokenRef` is zero-sized (unlike `&UnsyncSingletonToken`), so there is
+/// // no runtime overhead involved with passing `UnsyncSingletonTokenRef`.
+/// access_lock(token.borrow(), &lock);
+///
+/// fn access_lock(
+///     token: UnsyncSingletonTokenRef<'_, MyTag>,
+///     lock: &UnsyncTokenLock<u32, SingletonTokenId<MyTag>>,
+/// ) {
+///     assert_eq!(*lock.read(&*token), 1);
+/// }
+/// ```
+///
+/// `UnsyncSingletonTokenRef` does not allow mutable borrow:
+///
+/// ```rust,compile_fail
+/// # use tokenlock::*;
+/// # struct MyTag;
+/// # impl_singleton_token_factory!(MyTag);
+/// # let token = UnsyncSingletonToken::<MyTag>::new().unwrap();
+/// # let lock = UnsyncTokenLock::new(token.id(), 1);
+/// let token_ref: UnsyncSingletonTokenRef<MyTag> = token.borrow();
+///
+/// // compile error: `UnsyncSingletonTokenRef` does not implement `DerefMut`
+/// *lock.write(&mut *token_ref) = 4;
+/// ```
+///
+/// `UnsyncSingletonTokenRef` is not `Send`-able because
+/// [`UnsyncSingletonToken`] is not `Sync`:
+///
+/// ```rust,compile_fail
+/// # use tokenlock::*;
+/// # struct MyTag;
+/// # impl_singleton_token_factory!(MyTag);
+/// let token: &'static UnsyncSingletonTokenGuard<MyTag> =
+///     Box::leak(Box::new(UnsyncSingletonToken::<MyTag>::new().unwrap()));
+/// let token_ref: UnsyncSingletonTokenRef<MyTag> = token.borrow();
+/// // compile error: `UnsyncSingletonTokenRef` is not `Send`
+/// std::thread::spawn(move || {
+///     let _token_ref = token_ref;
+/// });
+/// ```
 pub type UnsyncSingletonTokenRef<'a, Tag> = SingletonTokenRef<'a, Tag, UnsyncVariant>;
 
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug
@@ -302,11 +382,43 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> ops::Deref
 ///     lock.replace(&mut *token, 2);
 /// }
 /// ```
+///
+/// `SingletonTokenRefMut` is `Send`-able because [`SingletonToken`] is `Send`:
+///
+/// ```rust
+/// # use tokenlock::*;
+/// # struct MyTag;
+/// # impl_singleton_token_factory!(MyTag);
+/// let token: &'static mut SingletonTokenGuard<MyTag> =
+///     Box::leak(Box::new(SingletonToken::<MyTag>::new().unwrap()));
+/// let token_ref: SingletonTokenRefMut<MyTag> = token.borrow_mut();
+/// std::thread::spawn(move || {
+///     let _token_ref = token_ref;
+/// });
+/// ```
 pub struct SingletonTokenRefMut<'a, Tag: ?Sized, Variant = SyncVariant>(
     PhantomData<&'a mut SingletonToken<Tag, Variant>>,
 );
 
-/// The `!Sync` variant of [`SingletonTokenRefMut`].
+/// Zero-sized logical equivalent of `&'a mut `[`UnsyncSingletonToken`]`<Tag>`. The
+/// `!Sync` variant of [`SingletonTokenRefMut`].
+///
+/// # Examples
+///
+/// `UnsyncSingletonTokenRefMut` is `Send`-able because [`UnsyncSingletonToken`]
+/// is `Send`:
+///
+/// ```rust
+/// # use tokenlock::*;
+/// # struct MyTag;
+/// # impl_singleton_token_factory!(MyTag);
+/// let token: &'static mut UnsyncSingletonTokenGuard<MyTag> =
+///     Box::leak(Box::new(UnsyncSingletonToken::<MyTag>::new().unwrap()));
+/// let token_ref: UnsyncSingletonTokenRefMut<MyTag> = token.borrow_mut();
+/// std::thread::spawn(move || {
+///     let _token_ref = token_ref;
+/// });
+/// ```
 pub type UnsyncSingletonTokenRefMut<'a, Tag> = SingletonTokenRefMut<'a, Tag, UnsyncVariant>;
 
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug
