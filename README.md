@@ -7,6 +7,8 @@ accessed by an unforgeable token.
 
 ## Examples
 
+### Basics
+
 ```rust
 let mut token = ArcToken::new();
 
@@ -36,6 +38,8 @@ thread::Builder::new().spawn(move || {
 // can't access the contents; I no longer have `Token`
 // lock.write(&mut token);
 ```
+
+### Lifetimes
 
 The lifetime of the returned reference is limited by both of the `TokenLock`
 and `Token`.
@@ -67,6 +71,64 @@ While allowing multiple immutable references:
 ```rust
 let read_guard1 = lock.read(&token);
 let read_guard2 = lock.read(&token);
+```
+
+### Use case: Linked lists
+
+An operating system kernel often needs to store the global state in a global
+variable. Linked lists are a common data structure used in a kernel, but
+Rust's ownership does not allow forming `'static` references into values
+protected by a mutex. Common work-arounds, such as smart pointers and index
+references, take a heavy toll on a small microcontroller with a single-issue
+in-order pipeline and no hardware multiplier.
+
+```rust
+struct Process {
+    prev: Option<& /* what lifetime? */ Process>,
+    next: Option<& /* what lifetime? */ Process>,
+    state: u8,
+    /* ... */
+}
+struct SystemState {
+    first_process: Option<& /* what lifetime? */ Process>,
+    process_pool: [Process; 64],
+}
+static STATE: Mutex<SystemState> = todo!();
+```
+
+`tokenlock` makes the `'static` reference approach possible by detaching the
+lock granularity from the protected data's granularity.
+
+```rust
+use tokenlock::*;
+use std::cell::Cell;
+struct Tag;
+impl_singleton_token_factory!(Tag);
+
+type KLock<T> = UnsyncTokenLock<T, SingletonTokenId<Tag>>;
+type KLockToken = UnsyncSingletonToken<Tag>;
+type KLockTokenId = SingletonTokenId<Tag>;
+
+struct Process {
+    prev: KLock<Option<&'static Process>>,
+    next: KLock<Option<&'static Process>>,
+    state: KLock<u8>,
+    /* ... */
+}
+struct SystemState {
+    first_process: KLock<Option<&'static Process>>,
+    process_pool: [Process; 1],
+}
+static STATE: SystemState = SystemState {
+    first_process: KLock::new(KLockTokenId::new(), None),
+    process_pool: [
+        Process {
+            prev: KLock::new(KLockTokenId::new(), None),
+            next: KLock::new(KLockTokenId::new(), None),
+            state: KLock::new(KLockTokenId::new(), 0),
+        }
+    ],
+};
 ```
 
 ## Token types
