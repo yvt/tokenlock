@@ -464,7 +464,7 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> hash::Hash
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> ops::Deref
     for SingletonTokenRefMut<'_, Tag, Variant>
 {
-    type Target = SingletonToken<Tag>;
+    type Target = SingletonToken<Tag, Variant>;
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
