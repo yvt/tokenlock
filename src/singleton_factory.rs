@@ -48,6 +48,7 @@ pub unsafe trait SingletonTokenFactory {
 macro_rules! impl_singleton_token_factory {
     ($ty:ty $(,)*) => {
         impl $crate::SingletonTokenFactoryStorage for $ty {
+            #[inline]
             unsafe fn __stfs_token_issued() -> &'static $crate::std_core::sync::atomic::AtomicBool {
                 use $crate::std_core::sync::atomic::AtomicBool;
                 static TOKEN_ISSUED: AtomicBool = AtomicBool::new(false);
@@ -56,6 +57,7 @@ macro_rules! impl_singleton_token_factory {
         }
 
         unsafe impl $crate::SingletonTokenFactory for $ty {
+            #[inline]
             fn take() -> bool {
                 use $crate::std_core::sync::atomic::Ordering;
                 let token_issued =
@@ -65,6 +67,7 @@ macro_rules! impl_singleton_token_factory {
             // The inner `unsafe` block is redundant only if `unsafe_op_in_unsafe_fn`
             // (https://github.com/rust-lang/rust/issues/71668) is set to "allow".
             #[allow(unused_unsafe)]
+            #[inline]
             unsafe fn r#return() {
                 use $crate::std_core::sync::atomic::Ordering;
                 let token_issued =
@@ -82,6 +85,7 @@ pub trait SingletonTokenFactoryStorage {
 }
 
 impl<Tag: ?Sized + SingletonTokenFactory, Variant> Drop for SingletonTokenGuard<Tag, Variant> {
+    #[inline]
     fn drop(&mut self) {
         // Safety: This call is accompanied with the destruction of `self.token`.
         unsafe { Tag::r#return() };
@@ -169,6 +173,7 @@ impl<Tag: ?Sized + SingletonTokenFactory, Variant: SingletonTokenVariant>
     /// let token = SingletonToken::<MyTag>::new().unwrap();
     /// assert!(SingletonToken::<MyTag>::new().is_err());
     /// ```
+    #[inline]
     pub fn new() -> Result<SingletonTokenGuard<Tag, Variant>, SingletonTokenExhaustedError> {
         if Tag::take() {
             Ok(SingletonTokenGuard {
@@ -184,6 +189,7 @@ impl<Tag: ?Sized + SingletonTokenFactory, Variant: SingletonTokenVariant>
 
 impl<Tag: ?Sized + SingletonTokenFactory> SingletonTokenGuard<Tag> {
     /// Convert `SingletonTokenGuard` to the `!Sync` variant.
+    #[inline]
     pub fn into_unsync(self) -> UnsyncSingletonTokenGuard<Tag> {
         // Suppress `self`'s destructor
         mem::forget(self);
@@ -197,6 +203,7 @@ impl<Tag: ?Sized + SingletonTokenFactory> SingletonTokenGuard<Tag> {
 
 impl<Tag: ?Sized + SingletonTokenFactory> UnsyncSingletonTokenGuard<Tag> {
     /// Convert `UnsyncSingletonToken` to the `Sync` variant.
+    #[inline]
     pub fn into_sync(self) -> SingletonTokenGuard<Tag> {
         // Suppress `self`'s destructor
         mem::forget(self);

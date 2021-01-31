@@ -106,12 +106,14 @@ mod private {
 struct Invariant<Tag: ?Sized>(fn(&Tag) -> &Tag);
 
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug for SingletonToken<Tag, Variant> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonToken")
     }
 }
 
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> PartialEq for SingletonToken<Tag, Variant> {
+    #[inline]
     fn eq(&self, _: &Self) -> bool {
         false
     }
@@ -120,6 +122,7 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> PartialEq for SingletonToken<T
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> Eq for SingletonToken<Tag, Variant> {}
 
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> hash::Hash for SingletonToken<Tag, Variant> {
+    #[inline]
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
 
@@ -148,6 +151,7 @@ impl<Tag: ?Sized, Variant> SingletonToken<Tag, Variant> {
     ///
     /// `SingletonTokenRef` is truly zero-sized, so it's more efficient to
     /// store and pass than `&SingletonToken`.
+    #[inline]
     pub fn borrow(&self) -> SingletonTokenRef<'_, Tag, Variant> {
         SingletonTokenRef(PhantomData)
     }
@@ -157,6 +161,7 @@ impl<Tag: ?Sized, Variant> SingletonToken<Tag, Variant> {
     ///
     /// `SingletonTokenRefMut` is truly zero-sized, so it's more efficient to
     /// store and pass than `&mut SingletonToken`.
+    #[inline]
     pub fn borrow_mut(&mut self) -> SingletonTokenRefMut<'_, Tag, Variant> {
         SingletonTokenRefMut(PhantomData)
     }
@@ -164,11 +169,13 @@ impl<Tag: ?Sized, Variant> SingletonToken<Tag, Variant> {
 
 impl<Tag: ?Sized> UnsyncSingletonToken<Tag> {
     /// Borrow `self: UnsyncSingletonToken` as [`SingletonTokenRef`].
+    #[inline]
     pub fn borrow_sync(&self) -> SingletonTokenRef<'_, Tag> {
         SingletonTokenRef(PhantomData)
     }
 
     /// Borrow `self: UnsyncSingletonToken` mutably as [`SingletonTokenRefMut`].
+    #[inline]
     pub fn borrow_sync_mut(&mut self) -> SingletonTokenRefMut<'_, Tag> {
         SingletonTokenRefMut(PhantomData)
     }
@@ -179,6 +186,7 @@ impl<Tag: ?Sized> SingletonToken<Tag> {
     ///
     /// There is no `borrow_unsync` because that would allow
     /// `UnsyncSingletonToken` to be logically borrowed by multiple threads.
+    #[inline]
     pub fn borrow_unsync_mut(&mut self) -> UnsyncSingletonTokenRefMut<'_, Tag> {
         SingletonTokenRefMut(PhantomData)
     }
@@ -186,6 +194,7 @@ impl<Tag: ?Sized> SingletonToken<Tag> {
 
 impl<Tag: ?Sized> SingletonToken<Tag> {
     /// Convert `SingletonToken` to the `!Sync` variant.
+    #[inline]
     pub const fn into_unsync(self) -> UnsyncSingletonToken<Tag> {
         SingletonToken(PhantomData)
     }
@@ -193,6 +202,7 @@ impl<Tag: ?Sized> SingletonToken<Tag> {
 
 impl<Tag: ?Sized> UnsyncSingletonToken<Tag> {
     /// Convert `UnsyncSingletonToken` to the `Sync` variant.
+    #[inline]
     pub const fn into_sync(self) -> SingletonToken<Tag> {
         SingletonToken(PhantomData)
     }
@@ -324,6 +334,7 @@ pub type UnsyncSingletonTokenRef<'a, Tag> = SingletonTokenRef<'a, Tag, UnsyncVar
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug
     for SingletonTokenRef<'_, Tag, Variant>
 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonTokenRef")
     }
@@ -332,6 +343,7 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> PartialEq
     for SingletonTokenRef<'_, Tag, Variant>
 {
+    #[inline]
     fn eq(&self, _: &Self) -> bool {
         false
     }
@@ -342,6 +354,7 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> Eq for SingletonTokenRef<'_, T
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> hash::Hash
     for SingletonTokenRef<'_, Tag, Variant>
 {
+    #[inline]
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
 
@@ -424,6 +437,7 @@ pub type UnsyncSingletonTokenRefMut<'a, Tag> = SingletonTokenRefMut<'a, Tag, Uns
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug
     for SingletonTokenRefMut<'_, Tag, Variant>
 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonTokenRefMut")
     }
@@ -432,6 +446,7 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> fmt::Debug
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> PartialEq
     for SingletonTokenRefMut<'_, Tag, Variant>
 {
+    #[inline]
     fn eq(&self, _: &Self) -> bool {
         false
     }
@@ -442,6 +457,7 @@ impl<Tag: ?Sized, Variant: SingletonTokenVariant> Eq for SingletonTokenRefMut<'_
 impl<Tag: ?Sized, Variant: SingletonTokenVariant> hash::Hash
     for SingletonTokenRefMut<'_, Tag, Variant>
 {
+    #[inline]
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
 
@@ -503,24 +519,28 @@ pub struct SingletonTokenId<Tag: ?Sized>(PhantomData<Invariant<Tag>>);
 
 impl<Tag: ?Sized> SingletonTokenId<Tag> {
     /// Construct `Self`.
+    #[inline]
     pub const fn new() -> Self {
         Self(PhantomData)
     }
 }
 
 impl<Tag: ?Sized> Default for SingletonTokenId<Tag> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl<Tag: ?Sized> fmt::Debug for SingletonTokenId<Tag> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("SingletonTokenId")
     }
 }
 
 impl<Tag: ?Sized> Clone for SingletonTokenId<Tag> {
+    #[inline]
     fn clone(&self) -> Self {
         Self(PhantomData)
     }
@@ -529,6 +549,7 @@ impl<Tag: ?Sized> Clone for SingletonTokenId<Tag> {
 impl<Tag: ?Sized> Copy for SingletonTokenId<Tag> {}
 
 impl<Tag: ?Sized> PartialEq for SingletonTokenId<Tag> {
+    #[inline]
     fn eq(&self, _: &Self) -> bool {
         false
     }
@@ -537,5 +558,6 @@ impl<Tag: ?Sized> PartialEq for SingletonTokenId<Tag> {
 impl<Tag: ?Sized> Eq for SingletonTokenId<Tag> {}
 
 impl<Tag: ?Sized> hash::Hash for SingletonTokenId<Tag> {
+    #[inline]
     fn hash<H: hash::Hasher>(&self, _: &mut H) {}
 }
