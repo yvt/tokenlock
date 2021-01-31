@@ -1,4 +1,4 @@
-use crate::std_core::{fmt, hash, marker::PhantomData, ops, ptr::NonNull};
+use crate::std_core::{cell, fmt, hash, marker::PhantomData, ops, ptr::NonNull};
 
 use super::{Token, Unsync};
 
@@ -88,7 +88,7 @@ pub type UnsyncSingletonToken<Tag> = SingletonToken<Tag, UnsyncVariant>;
 #[doc(hidden)]
 pub struct SyncVariant(());
 #[doc(hidden)]
-pub struct UnsyncVariant(std::cell::Cell<()>);
+pub struct UnsyncVariant(cell::Cell<()>);
 
 #[doc(hidden)]
 pub trait SingletonTokenVariant: private::Sealed {}
