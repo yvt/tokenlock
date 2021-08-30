@@ -347,6 +347,15 @@ macro_rules! impl_common {
                 }
             }
 
+            /// Construct a `Self` with a default-constructed `Keyhole`.
+            #[inline]
+            pub fn wrap(data: T) -> Self
+            where
+                Keyhole: Default,
+            {
+                Self::new(Default::default(), data)
+            }
+
             /// Consume `self`, returning the contained data.
             #[inline]
             pub fn into_inner(self) -> T {
