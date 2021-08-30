@@ -10,6 +10,7 @@ Provides cell types that decouple permissions from data.
 """
 keywords = ["token", "lock", "cell", "ghost", "borrow"]
 categories = ["rust-patterns", "no-std"]
+edition = "2018"
 
 [features]
 default = ["std"]

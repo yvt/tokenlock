@@ -248,6 +248,7 @@
 //! [3]: https://crates.io/crates/singleton-cell
 //! [4]: https://crates.io/crates/qcell
 #![cfg_attr(not(feature = "std"), no_std)]
+#![deny(rust_2018_idioms)]
 
 #[cfg(not(feature = "std"))]
 #[doc(hidden)]
@@ -345,7 +346,7 @@ impl std::error::Error for BadTokenError {
 
 #[cfg(feature = "std")]
 impl fmt::Display for BadTokenError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "token mismatch")
     }
 }
@@ -353,7 +354,7 @@ impl fmt::Display for BadTokenError {
 macro_rules! impl_common {
     ($ty:ident, [$($token_read_bounds:tt)*]) => {
         impl<T: ?Sized, Keyhole: fmt::Debug> fmt::Debug for $ty<T, Keyhole> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.debug_struct(stringify!($ty))
                     .field("keyhole", &self.keyhole)
                     .finish()
