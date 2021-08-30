@@ -7,8 +7,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //
-//! This crate provides a cell type, [`TokenLock`], whose contents can only be
-//! accessed by an unforgeable token.
+//! This crate provides a cell type, [`TokenLock`], which can only be borrowed
+//! by presenting the correct unforgeable token, thus decoupling permissions
+//! from data.
 //!
 //! # Examples
 //!
