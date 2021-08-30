@@ -360,6 +360,8 @@ macro_rules! impl_common {
             }
         }
 
+        /// # Construction and Destruction
+        ///
         impl<T, Keyhole> $ty<T, Keyhole> {
             /// Construct a `Self`.
             #[inline]
@@ -386,6 +388,8 @@ macro_rules! impl_common {
             }
         }
 
+        /// # Miscellaneous
+        ///
         impl<T: ?Sized, Keyhole> $ty<T, Keyhole> {
             /// Get a reference to the contained `Keyhole` (keyhole).
             #[inline]
@@ -393,18 +397,16 @@ macro_rules! impl_common {
                 &self.keyhole
             }
 
-            /// Get a mutable reference to the contained data.
-            #[inline]
-            pub fn get_mut(&mut self) -> &mut T {
-                unsafe { &mut *self.data.get() }
-            }
-
             /// Get a raw pointer to the contained data.
             #[inline]
             pub const fn as_ptr(&self) -> *mut T {
                 self.data.get()
             }
+        }
 
+        /// # Borrowing
+        ///
+        impl<T: ?Sized, Keyhole> $ty<T, Keyhole> {
             /// Get a reference to the contained data. Panic if `token` doesn't fit in
             /// the [`keyhole`](Self::keyhole).
             #[inline]
@@ -446,8 +448,16 @@ macro_rules! impl_common {
                     Err(BadTokenError)
                 }
             }
+
+            /// Get a mutable reference to the contained data.
+            #[inline]
+            pub fn get_mut(&mut self) -> &mut T {
+                unsafe { &mut *self.data.get() }
+            }
         }
 
+        /// # Utilities
+        ///
         impl<T, Keyhole> $ty<T, Keyhole> {
             /// Get the contained data by cloning. Panic if `token` doesn't fit in
             /// the [`keyhole`](Self::keyhole).
@@ -566,6 +576,8 @@ macro_rules! impl_common {
             }
         }
 
+        /// # Cloning
+        ///
         impl<T: Clone, Keyhole: Clone> $ty<T, Keyhole> {
             /// Clone `self`. Panic if `token` doesn't fit in the
             /// [`keyhole`](Self::keyhole).
