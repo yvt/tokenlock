@@ -125,7 +125,6 @@ impl std::error::Error for SingletonTokenExhaustedError {
     }
 }
 
-#[cfg(feature = "std")]
 impl fmt::Display for SingletonTokenExhaustedError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "token already issued")

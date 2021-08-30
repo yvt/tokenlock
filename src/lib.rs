@@ -344,7 +344,6 @@ impl std::error::Error for BadTokenError {
     }
 }
 
-#[cfg(feature = "std")]
 impl fmt::Display for BadTokenError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "token mismatch")
