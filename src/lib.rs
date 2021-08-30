@@ -168,6 +168,12 @@
 //! [`SingletonToken::new`]. Alternatively, you can use
 //! [`SingletonToken::new_unchecked`], but this is unsafe if misused.
 //!
+//! [`BrandedToken`]`<'brand>` implements an extension of [GhostCell][1]. It's
+//! created by [`with_branded_token`], which makes the created token available
+//! only within the provided closure. This token incurs no runtime cost.
+//!
+//! [1]: http://plv.mpi-sws.org/rustbelt/ghostcell/
+//!
 //! # `!Sync` tokens
 //!
 //! [`UnsyncTokenLock`] is similar to `TokenLock` but designed for non-`Sync`
@@ -239,8 +245,9 @@ pub use self::{arc::*, rc::*};
 
 mod singleton_factory;
 
+mod branded;
 mod singleton;
-pub use self::{singleton::*, singleton_factory::*};
+pub use self::{branded::*, singleton::*, singleton_factory::*};
 
 /// Trait for an unforgeable token used to access the contents of a
 /// [`TokenLock`]`<_, Keyhole>`.
