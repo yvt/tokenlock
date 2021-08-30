@@ -168,7 +168,7 @@
 //! [`SingletonToken::new`]. Alternatively, you can use
 //! [`SingletonToken::new_unchecked`], but this is unsafe if misused.
 //!
-//! [`BrandedToken`]`<'brand>` implements an extension of [GhostCell][1]. It's
+//! [`BrandedToken`]`<'brand>` implements an extension of [`GhostCell`][1]. It's
 //! created by [`with_branded_token`], which makes the created token available
 //! only within the provided closure. This token incurs no runtime cost.
 //!
@@ -224,6 +224,28 @@
 //!
 //! let _ = token_1;
 //! ```
+//!
+//! # Related Work
+//!
+//!  - [`ghost-cell`][1] is the official implementation of [`GhostCell`][2] and
+//!    has been formally proven to be sound. It provides an equivalent of
+//!    [`BrandedTokenLock`] with a simpler, more focused interface.
+//!
+//!  - `SCell` from [`singleton-cell`][3] is a more generalized version of
+//!    `GhostCell` and accepts any singleton token types, and thus it's more
+//!    closer to our `TokenLock`. It provides equivalents of our
+//!    [`BrandedToken`] and [`SingletonToken`] out-of-box. It trades away
+//!    non-ZST token types for a unique advantage: `SCell<Key, [T]>` can be
+//!    transposed to `[SCell<Key, T>]`.
+//!
+//!  - [`qcell`][4] provides multiple cell types with different check
+//!    mechanisms. `QCell` uses a 32-bit integer as a token identifier, `TCell`
+//!    and `TLCell` use a marker type, and `LCell` uses lifetime branding.
+//!
+//! [1]: https://crates.io/crates/ghost-cell
+//! [2]: http://plv.mpi-sws.org/rustbelt/ghostcell/
+//! [3]: https://crates.io/crates/singleton-cell
+//! [4]: https://crates.io/crates/qcell
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
