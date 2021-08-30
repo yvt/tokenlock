@@ -17,3 +17,6 @@ std = []
 
 [badges]
 maintenance = { status = "passively-maintained" }
+
+[dev-dependencies]
+rayon = "1.5.1"
