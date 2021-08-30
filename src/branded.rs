@@ -1,7 +1,10 @@
 //! Lifetime-branded tokens (a.k.a. GhostCell)
-use crate::singleton::{
-    SingletonToken, SingletonTokenId, SingletonTokenRef, SingletonTokenRefMut,
-    UnsyncSingletonToken, UnsyncSingletonTokenRef, UnsyncSingletonTokenRefMut,
+use crate::{
+    singleton::{
+        SingletonToken, SingletonTokenId, SingletonTokenRef, SingletonTokenRefMut,
+        UnsyncSingletonToken, UnsyncSingletonTokenRef, UnsyncSingletonTokenRefMut,
+    },
+    TokenLock, UnsyncTokenLock,
 };
 
 /// Lifetime-branded tag for use with [`SingletonToken`].
@@ -38,6 +41,17 @@ pub type UnsyncBrandedTokenRefMut<'a, 'brand> = UnsyncSingletonTokenRefMut<'a, B
 /// `TokenLock<T, `[`BrandedTokenId`]`<'brand>>` but can be used to create one.
 /// Can be `default`-constructed.
 pub type BrandedTokenId<'brand> = SingletonTokenId<BrandedTag<'brand>>;
+
+/// A mutual exclusive primitive that can be accessed by presenting a
+/// [`BrandedToken`] with the correct brand lifetime parameter.
+pub type BrandedTokenLock<'brand, T> = TokenLock<T, BrandedTokenId<'brand>>;
+
+/// Like [`BrandedTokenLock`] but requires presenting [`UnsyncBrandedToken`],
+/// which is [`Unsync`]. This subtle difference allows it to be `Sync` even if
+/// `T` is not.
+///
+/// [`Unsync`]: crate::Unsync
+pub type UnsyncBrandedTokenLock<'brand, T> = UnsyncTokenLock<T, BrandedTokenId<'brand>>;
 
 /// Call the provieded closure with a brand new [`BrandedToken`], which can
 /// only be used throughout the duration of the function call.
