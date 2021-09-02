@@ -132,6 +132,22 @@ static STATE: SystemState = SystemState {
 };
 ```
 
+## Cell types
+
+The `TokenLock` type family is comprised of the following types:
+
+|            | `Sync` tokens    | `!Sync` tokens²        |
+| ---------- | ---------------- | ---------------------- |
+| Unpinned   | `TokenLock`      | `UnsyncTokenLock`      |
+| Pinned¹    | `PinTokenLock`   | `UnsyncPinTokenLock`   |
+
+<sub>¹That is, these types respect `T` being `!Unpin` and prevent the
+exposure of `&mut T` through `&Self` or `Pin<&mut Self>`.</sub>
+
+<sub>²`Unsync*TokenLock` require that tokens are `!Sync` (not sharable
+across threads). In exchange, such cells can be `Sync` even if the contained
+data is not `Sync`, just like `std::sync::Mutex`.</sub>
+
 ## Token types
 
 This crate provides the following types implementing `Token`.
@@ -152,6 +168,13 @@ makes the created token available only within the provided closure or the
 created `Future`. This token incurs no runtime cost.
 
 [1]: http://plv.mpi-sws.org/rustbelt/ghostcell/
+
+| Token ID (keyhole)             | Token (key)                  |
+| ------------------------------ | ---------------------------- |
+| `RcTokenId`                    | `RcToken` + runtime check    |
+| `ArcTokenId`                   | `ArcToken` + runtime check   |
+| `SingletonTokenId<Tag>`        | `SingletonToken<Tag>`        |
+| `BrandedTokenId<'brand>`       | `BrandedToken<'brand>`       |
 
 ## `!Sync` tokens
 

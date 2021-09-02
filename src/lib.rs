@@ -155,6 +155,24 @@
 //! };
 //! ```
 //!
+//! # Cell types
+//!
+//! The `TokenLock` type family is comprised of the following types:
+//!
+//! |            | `Sync` tokens    | [`!Sync` tokens]²      |
+//! | ---------- | ---------------- | ---------------------- |
+//! | Unpinned   | [`TokenLock`]    | [`UnsyncTokenLock`]    |
+//! | Pinned¹    | [`PinTokenLock`] | [`UnsyncPinTokenLock`] |
+//!
+//! <sub>¹That is, these types respect `T` being `!Unpin` and prevent the
+//! exposure of `&mut T` through `&Self` or `Pin<&mut Self>`.</sub>
+//!
+//! <sub>²`Unsync*TokenLock` require that tokens are `!Sync` (not sharable
+//! across threads). In exchange, such cells can be `Sync` even if the contained
+//! data is not `Sync`, just like [`std::sync::Mutex`].</sub>
+//!
+//! [`!Sync` tokens]: #sync-tokens
+//!
 //! # Token types
 //!
 //! This crate provides the following types implementing [`Token`].
@@ -175,6 +193,13 @@
 //! created `Future`. This token incurs no runtime cost.
 //!
 //! [1]: http://plv.mpi-sws.org/rustbelt/ghostcell/
+//!
+//! | Token ID (keyhole)             | Token (key)                  |
+//! | ------------------------------ | ---------------------------- |
+//! | [`RcTokenId`]                  | [`RcToken`] + runtime check  |
+//! | [`ArcTokenId`]                 | [`ArcToken`] + runtime check |
+//! | [`SingletonTokenId`]`<Tag>`    | [`SingletonToken`]`<Tag>`    |
+//! | [`BrandedTokenId`]`<'brand>`   | [`BrandedToken`]`<'brand>`   |
 //!
 //! # `!Sync` tokens
 //!
@@ -361,14 +386,16 @@ pub struct UnsyncTokenLock<T: ?Sized, Keyhole> {
 unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for UnsyncTokenLock<T, Keyhole> {}
 unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole> {}
 
-/// A pinned mutual exclusive primitive that can be accessed using a
+/// A [pinned] mutual exclusive primitive that can be accessed using a
 /// [`Token`]`<Keyhole>` with a very low overhead.
 ///
 /// Unlike the unpinned variant [`TokenLock`], `PinTokenLock` does not expose
-/// `&mut T` unless the receiver type is `&mut Self`.
+/// `&mut T` unless the receiver type is `&mut Self`. This way, the pinning
+/// invariants are maintained.
 ///
 /// See the [module-level documentation] for more details.
 ///
+/// [pinned]: std_core::pin
 /// [module-level documentation]: index.html
 #[derive(Default)]
 pub struct PinTokenLock<T: ?Sized, Keyhole> {
@@ -385,10 +412,12 @@ unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for PinTokenLock<T, Key
 /// not.
 ///
 /// Unlike the unpinned variant [`UnsyncTokenLock`], `UnsyncPinTokenLock` does
-/// not expose `&mut T` unless the receiver type is `&mut Self`.
+/// not expose `&mut T` unless the receiver type is `&mut Self`. This way, the
+/// [pinning] invariants are maintained.
 ///
 /// See the [module-level documentation] for more details.
 ///
+/// [pinning]: std_core::pin
 /// [module-level documentation]: index.html#sync-tokens
 #[derive(Default)]
 pub struct UnsyncPinTokenLock<T: ?Sized, Keyhole> {
