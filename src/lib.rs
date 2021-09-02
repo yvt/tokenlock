@@ -668,6 +668,26 @@ macro_rules! impl_common {
                 Ok(self.try_read(token)?.clone())
             }
 
+            /// Assign a new value. Panic if `token` doesn't fit in the[`keyhole`](Self::keyhole).
+            #[inline]
+            pub fn set<K: Token<Keyhole>>(&self, token: &mut K, value: T) {
+                self.try_set(token, value).unwrap()
+            }
+
+            /// Assign a new value. Return `BadTokenError` if `token` doesn't fit in the
+            /// [`keyhole`](Self::keyhole).
+            #[inline]
+            pub fn try_set<K: Token<Keyhole>>(&self, token: &mut K, value: T)
+                -> Result<(), BadTokenError>
+            {
+                if token.eq_id(&self.keyhole) {
+                    // Safety: Even if the data is pinned, this is okay for the
+                    // same logic as `Pin::set`.
+                    Ok(unsafe { *self.data.get() = value; })
+                } else {
+                    Err(BadTokenError)
+                }
+            }
 
             if_unpin! {
                 type $ty;
