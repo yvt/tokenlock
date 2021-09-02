@@ -170,8 +170,9 @@
 //! [`SingletonToken::new_unchecked`], but this is unsafe if misused.
 //!
 //! [`BrandedToken`]`<'brand>` implements an extension of [`GhostCell`][1]. It's
-//! created by [`with_branded_token`], which makes the created token available
-//! only within the provided closure. This token incurs no runtime cost.
+//! created by [`with_branded_token`] or [`with_branded_token_async`], which
+//! makes the created token available only within the provided closure or the
+//! created `Future`. This token incurs no runtime cost.
 //!
 //! [1]: http://plv.mpi-sws.org/rustbelt/ghostcell/
 //!
