@@ -268,6 +268,10 @@ pub extern crate std as std_core;
 use self::std_core::cell::UnsafeCell;
 use self::std_core::fmt;
 
+#[cfg(doc)]
+#[doc = include_str!("../CHANGELOG.md")]
+pub mod _changelog_ {}
+
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 pub mod arc;
