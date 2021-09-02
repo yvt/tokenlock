@@ -268,6 +268,9 @@ pub extern crate std as std_core;
 use self::std_core::cell::UnsafeCell;
 use self::std_core::fmt;
 
+// Modules
+// ----------------------------------------------------------------------------
+
 #[cfg(doc)]
 #[doc = include_str!("../CHANGELOG.md")]
 pub mod _changelog_ {}
@@ -293,6 +296,9 @@ pub use self::{branded::*, singleton::*};
 #[cfg(feature = "unstable")]
 mod branded_async;
 
+// Traits
+// ----------------------------------------------------------------------------
+
 /// Trait for an unforgeable token used to access the contents of a
 /// [`TokenLock`]`<_, Keyhole>`.
 ///
@@ -315,6 +321,9 @@ pub unsafe trait Token<Keyhole> {
 ///
 /// `Self` must really be `!Sync`.
 pub unsafe trait Unsync {}
+
+// The `TokenLock` type family
+// ----------------------------------------------------------------------------
 
 /// A mutual exclusive primitive that can be accessed using a [`Token`]`<Keyhole>`
 /// with a very low overhead.
@@ -352,6 +361,9 @@ pub struct UnsyncTokenLock<T: ?Sized, Keyhole> {
 unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for UnsyncTokenLock<T, Keyhole> {}
 unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole> {}
 
+// Error type
+// ----------------------------------------------------------------------------
+
 /// Error type returned when a key ([`Token`]) doesn't fit in a keyhole
 /// ([`TokenLock::keyhole`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -370,6 +382,9 @@ impl fmt::Display for BadTokenError {
         write!(f, "token mismatch")
     }
 }
+
+// Implementation
+// ----------------------------------------------------------------------------
 
 #[doc(hidden)]
 macro_rules! impl_common {
@@ -625,6 +640,9 @@ macro_rules! impl_common {
 // reference because a mutable reference prohibits aliasing.
 impl_common!(TokenLock, [Token<Keyhole>]);
 impl_common!(UnsyncTokenLock, [Token<Keyhole> + Unsync]);
+
+// Tests
+// ----------------------------------------------------------------------------
 
 #[test]
 #[cfg(feature = "std")]
