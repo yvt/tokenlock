@@ -332,8 +332,11 @@ mod branded_async;
 ///
 /// # Safety
 ///
-/// Given two distinct instances of `T: Token` `x` and `y`,
-/// `x.eq_id(i) && y.eq_id(i)` must not be `true` for any `i`.
+/// If safe code could obtain two instances of `T: Token<_>` `x` and `y` and an
+/// instance of a `TokenLock`-like type `lock` such that `x` and `y` can be
+/// mutably borrowed at the same time, and `x.eq_id(lock.keyhole()) &&
+/// y.eq_id(lock.keyhole())`, it can invoke an undefined behavior by creating
+/// two mutable borrows of the same place.
 pub unsafe trait Token<Keyhole> {
     fn eq_id(&self, id: &Keyhole) -> bool;
 }
