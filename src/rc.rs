@@ -1,3 +1,6 @@
+//! [`Rc`]-based tokens
+//!
+//! [`Rc`]: std::rc::Rc
 use std::{hash, rc::Rc};
 
 use super::{Token, Unsync};

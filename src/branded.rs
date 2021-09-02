@@ -7,6 +7,9 @@ use crate::{
     TokenLock, UnsyncTokenLock,
 };
 
+#[cfg(feature = "unstable")]
+pub use crate::branded_async::*;
+
 /// Lifetime-branded tag for use with [`SingletonToken`].
 ///
 /// This type is invariant over `'brand`, although this could be just covariant

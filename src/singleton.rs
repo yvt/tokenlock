@@ -1,6 +1,9 @@
+//! Singleton tokens
 use crate::std_core::{cell, fmt, hash, marker::PhantomData, ops, ptr::NonNull};
 
 use super::{Token, Unsync};
+
+pub use crate::singleton_factory::*;
 
 /// A singleton unforgeable token used to access the contents of a
 /// `TokenLock`.

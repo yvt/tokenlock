@@ -261,22 +261,22 @@ use self::std_core::cell::UnsafeCell;
 use self::std_core::fmt;
 
 #[cfg(feature = "std")]
-mod arc;
+pub mod arc;
 #[cfg(feature = "std")]
-mod rc;
+pub mod rc;
 #[cfg(feature = "std")]
+#[doc(no_inline)]
 pub use self::{arc::*, rc::*};
 
 mod singleton_factory;
 
-mod branded;
-mod singleton;
-pub use self::{branded::*, singleton::*, singleton_factory::*};
+pub mod branded;
+pub mod singleton;
+#[doc(no_inline)]
+pub use self::{branded::*, singleton::*};
 
 #[cfg(feature = "unstable")]
 mod branded_async;
-#[cfg(feature = "unstable")]
-pub use self::branded_async::*;
 
 /// Trait for an unforgeable token used to access the contents of a
 /// [`TokenLock`]`<_, Keyhole>`.
@@ -355,6 +355,7 @@ impl fmt::Display for BadTokenError {
     }
 }
 
+#[doc(hidden)]
 macro_rules! impl_common {
     ($ty:ident, [$($token_read_bounds:tt)*]) => {
         impl<T: ?Sized, Keyhole: fmt::Debug> fmt::Debug for $ty<T, Keyhole> {

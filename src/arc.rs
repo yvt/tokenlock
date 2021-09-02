@@ -1,3 +1,6 @@
+//! [`Arc`]-based tokens
+//!
+//! [`Arc`]: std::sync::Arc
 use std::{hash, marker::PhantomData, sync::Arc};
 
 use super::{Token, Unsync};
