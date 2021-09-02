@@ -55,7 +55,7 @@ pub type BrandedTokenLock<'brand, T> = TokenLock<T, BrandedTokenId<'brand>>;
 /// [`Unsync`]: crate::Unsync
 pub type UnsyncBrandedTokenLock<'brand, T> = UnsyncTokenLock<T, BrandedTokenId<'brand>>;
 
-/// Call the provieded closure with a brand new [`BrandedToken`], which can
+/// Call the provided closure with a brand new [`BrandedToken`], which can
 /// only be used throughout the duration of the function call.
 ///
 /// This pattern is known as [GhostCell][1] and has been formally proven for
