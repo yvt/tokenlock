@@ -3,6 +3,7 @@ use core::future::Future;
 
 /// `FnOnce(BrandedToken<'brand>) -> impl Future`, used as a parameter type of
 /// [`with_branded_token_async`]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "unstable")))]
 pub trait IntoBrandedFuture<'brand> {
     /// The created `Future`'s type.
     type Future: Future<Output = Self::Output>;
@@ -125,6 +126,7 @@ where
 /// # }
 /// ```
 #[inline]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "unstable")))]
 pub fn with_branded_token_async<'a, F, R>(f: F) -> impl Future<Output = R> + 'a
 where
     for<'brand> F: IntoBrandedFuture<'brand, Output = R> + 'a,

@@ -226,6 +226,12 @@
 //! let _ = token_1;
 //! ```
 //!
+//! # Cargo Features
+//!
+//!  - **`std`** enables the items that depend on `std`.
+//!  - **`unstable`** enables experimental items that are not subject to the
+//!    semver guarantees.
+//!
 //! # Related Work
 //!
 //!  - [`ghost-cell`][1] is the official implementation of [`GhostCell`][2] and
@@ -248,6 +254,7 @@
 //! [3]: https://crates.io/crates/singleton-cell
 //! [4]: https://crates.io/crates/qcell
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
 
 #[cfg(not(feature = "std"))]
@@ -261,10 +268,13 @@ use self::std_core::cell::UnsafeCell;
 use self::std_core::fmt;
 
 #[cfg(feature = "std")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 pub mod arc;
 #[cfg(feature = "std")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 pub mod rc;
 #[cfg(feature = "std")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 #[doc(no_inline)]
 pub use self::{arc::*, rc::*};
 
@@ -343,6 +353,7 @@ unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole
 pub struct BadTokenError;
 
 #[cfg(feature = "std")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 impl std::error::Error for BadTokenError {
     fn description(&self) -> &str {
         "token mismatch"
