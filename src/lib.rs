@@ -266,7 +266,7 @@ pub extern crate core as std_core;
 pub extern crate std as std_core;
 
 use self::std_core::cell::UnsafeCell;
-use self::std_core::fmt;
+use self::std_core::{fmt, pin::Pin};
 
 // Modules
 // ----------------------------------------------------------------------------
@@ -361,6 +361,45 @@ pub struct UnsyncTokenLock<T: ?Sized, Keyhole> {
 unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for UnsyncTokenLock<T, Keyhole> {}
 unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole> {}
 
+/// A pinned mutual exclusive primitive that can be accessed using a
+/// [`Token`]`<Keyhole>` with a very low overhead.
+///
+/// Unlike the unpinned variant [`TokenLock`], `PinTokenLock` does not expose
+/// `&mut T` unless the receiver type is `&mut Self`.
+///
+/// See the [module-level documentation] for more details.
+///
+/// [module-level documentation]: index.html
+#[derive(Default)]
+pub struct PinTokenLock<T: ?Sized, Keyhole> {
+    keyhole: Keyhole,
+    data: UnsafeCell<T>,
+}
+
+// Safety: See `TokenLock`.
+unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for PinTokenLock<T, Keyhole> {}
+unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for PinTokenLock<T, Keyhole> {}
+
+/// Like [`PinTokenLock`], but the usable [`Token`]s are constrained by
+/// [`Unsync`]. This subtle difference allows it to be `Sync` even if `T` is
+/// not.
+///
+/// Unlike the unpinned variant [`UnsyncTokenLock`], `UnsyncPinTokenLock` does
+/// not expose `&mut T` unless the receiver type is `&mut Self`.
+///
+/// See the [module-level documentation] for more details.
+///
+/// [module-level documentation]: index.html#sync-tokens
+#[derive(Default)]
+pub struct UnsyncPinTokenLock<T: ?Sized, Keyhole> {
+    keyhole: Keyhole,
+    data: UnsafeCell<T>,
+}
+
+// Safety: See `UnsyncTokenLock`.
+unsafe impl<T: ?Sized + Send, Keyhole: Send> Send for UnsyncPinTokenLock<T, Keyhole> {}
+unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncPinTokenLock<T, Keyhole> {}
+
 // Error type
 // ----------------------------------------------------------------------------
 
@@ -385,6 +424,24 @@ impl fmt::Display for BadTokenError {
 
 // Implementation
 // ----------------------------------------------------------------------------
+
+#[doc(hidden)]
+/// Used inside [`impl_common!`].
+macro_rules! if_pin {
+    ( type PinTokenLock; $($rest:tt)* ) => { $($rest)* };
+    ( type UnsyncPinTokenLock; $($rest:tt)* ) => { $($rest)* };
+    ( type TokenLock; $($rest:tt)* ) => {};
+    ( type UnsyncTokenLock; $($rest:tt)* ) => {};
+}
+
+#[doc(hidden)]
+/// Used inside [`impl_common!`].
+macro_rules! if_unpin {
+    ( type PinTokenLock; $($rest:tt)* ) => {};
+    ( type UnsyncPinTokenLock; $($rest:tt)* ) => {};
+    ( type TokenLock; $($rest:tt)* ) => { $($rest)* };
+    ( type UnsyncTokenLock; $($rest:tt)* ) => { $($rest)* };
+}
 
 #[doc(hidden)]
 macro_rules! impl_common {
@@ -444,6 +501,18 @@ macro_rules! impl_common {
         /// # Borrowing
         ///
         impl<T: ?Sized, Keyhole> $ty<T, Keyhole> {
+            // Unpinned variant:
+            //
+            //  - The `*_pin` methods would be unsound because the `write`
+            //    method` exposes `&mut T` through `&Self`.
+            //  - The `get_pin_mut` method would be unsound for the same reason.
+            //
+            // Pinned variant:
+            //
+            //  - The `write*` (non-`_pin`) method would be unsound because it
+            //    exposes `&mut T` through `&Self`.
+            //
+
             /// Get a reference to the contained data. Panic if `token` doesn't fit in
             /// the [`keyhole`](Self::keyhole).
             #[inline]
@@ -451,11 +520,43 @@ macro_rules! impl_common {
                 self.try_read(token).unwrap()
             }
 
-            /// Get a mutable reference to the contained data. Panic if `token` doesn't
-            /// fit in the [`keyhole`](Self::keyhole).
-            #[inline]
-            pub fn write<'a, K: Token<Keyhole>>(&'a self, token: &'a mut K) -> &'a mut T {
-                self.try_write(token).unwrap()
+            if_pin! {
+                type $ty;
+
+                /// Get a pinned reference to the contained data. Panic if `token` doesn't fit in
+                /// the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn read_pin<'a, K: $($token_read_bounds)*>(
+                    self: Pin<&'a Self>,
+                    token: &'a K,
+                ) -> Pin<&'a T> {
+                    self.try_read_pin(token).unwrap()
+                }
+            }
+
+            if_unpin! {
+                type $ty;
+
+                /// Get a mutable reference to the contained data. Panic if `token` doesn't
+                /// fit in the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn write<'a, K: Token<Keyhole>>(&'a self, token: &'a mut K) -> &'a mut T {
+                    self.try_write(token).unwrap()
+                }
+            }
+
+            if_pin! {
+                type $ty;
+
+                /// Get a mutable pinned reference to the contained data. Panic if `token` doesn't
+                /// fit in the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn write_pin<'a, K: Token<Keyhole>>(
+                    self: Pin<&'a Self>,
+                    token: &'a mut K,
+                ) -> Pin<&'a mut T> {
+                    self.try_write_pin(token).unwrap()
+                }
             }
 
             /// Get a reference to the contained data. Return `BadTokenError` if `token`
@@ -472,17 +573,58 @@ macro_rules! impl_common {
                 }
             }
 
-            /// Get a mutable reference to the contained data. Return `BadTokenError` if
-            /// `token` doesn't fit in the [`keyhole`](Self::keyhole).
-            #[inline]
-            pub fn try_write<'a, K: Token<Keyhole>>(
-                &'a self,
-                token: &'a mut K,
-            ) -> Result<&'a mut T, BadTokenError> {
-                if token.eq_id(&self.keyhole) {
-                    Ok(unsafe { &mut *self.data.get() })
-                } else {
-                    Err(BadTokenError)
+            if_pin! {
+                type $ty;
+
+                /// Get a pinned reference to the contained data. Return `BadTokenError` if `token`
+                /// doesn't fit in the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn try_read_pin<'a, K: $($token_read_bounds)*>(
+                    self: Pin<&'a Self>,
+                    token: &'a K,
+                ) -> Result<Pin<&'a T>, BadTokenError> {
+                    if token.eq_id(&self.keyhole) {
+                        Ok(unsafe { Pin::new_unchecked(&*self.data.get()) })
+                    } else {
+                        Err(BadTokenError)
+                    }
+                }
+
+            }
+
+            if_unpin! {
+                type $ty;
+
+                /// Get a mutable reference to the contained data. Return `BadTokenError` if
+                /// `token` doesn't fit in the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn try_write<'a, K: Token<Keyhole>>(
+                    &'a self,
+                    token: &'a mut K,
+                ) -> Result<&'a mut T, BadTokenError> {
+                    if token.eq_id(&self.keyhole) {
+                        Ok(unsafe { &mut *self.data.get() })
+                    } else {
+                        Err(BadTokenError)
+                    }
+                }
+            }
+
+            if_pin! {
+                type $ty;
+
+                /// Get a mutable pinned reference to the contained data. Return `BadTokenError` if
+                /// `token` doesn't fit in the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn try_write_pin<'a, K: Token<Keyhole>>(
+                    self: Pin<&'a Self>,
+                    token: &'a mut K,
+                ) -> Result<Pin<&'a mut T>, BadTokenError> {
+                    if token.eq_id(&self.keyhole) {
+                        Ok(unsafe { Pin::new_unchecked(&mut *self.data.get()) })
+                    } else {
+                        Err(BadTokenError)
+                    }
                 }
             }
 
@@ -490,6 +632,16 @@ macro_rules! impl_common {
             #[inline]
             pub fn get_mut(&mut self) -> &mut T {
                 unsafe { &mut *self.data.get() }
+            }
+
+            if_pin! {
+                type $ty;
+
+                /// Get a mutable pinned reference to the contained data.
+                #[inline]
+                pub fn get_pin_mut(self: Pin<&mut Self>) -> Pin<&mut T> {
+                    unsafe { Pin::new_unchecked(&mut *self.data.get()) }
+                }
             }
         }
 
@@ -516,100 +668,105 @@ macro_rules! impl_common {
                 Ok(self.try_read(token)?.clone())
             }
 
-            /// Take the contained data, leaving `Default::default()` in its place.
-            /// Panic if `token` doesn't fit in the [`keyhole`](Self::keyhole).
-            #[inline]
-            pub fn take<K: Token<Keyhole>>(&self, token: &mut K) -> T
-            where
-                T: Default,
-            {
-                self.replace_with(token, |_| Default::default())
-            }
 
-            /// Take the contained data, leaving `Default::default()` in its place.
-            /// Return `BadTokenError` if `token` doesn't fit in the
-            /// [`keyhole`](Self::keyhole).
-            #[inline]
-            pub fn try_take<K: Token<Keyhole>>(&self, token: &mut K) -> Result<T, BadTokenError>
-            where
-                T: Default,
-            {
-                self.try_replace_with(token, |_| Default::default())
-            }
+            if_unpin! {
+                type $ty;
 
-            /// Replace the contained data with a new one. Panic if `token` doesn't fit
-            /// in the [`keyhole`](Self::keyhole).
-            ///
-            /// This function corresponds to [`std::mem::replace`].
-            #[inline]
-            pub fn replace<K: Token<Keyhole>>(&self, token: &mut K, t: T) -> T {
-                std_core::mem::replace(self.write(token), t)
-            }
-
-            /// Replace the contained data with a new one computed by the given
-            /// closure. Panic if `token` doesn't fit in the
-            /// [`keyhole`](Self::keyhole).
-            ///
-            /// This function corresponds to [`std::mem::replace`].
-            #[inline]
-            pub fn replace_with<K: Token<Keyhole>>(
-                &self,
-                token: &mut K,
-                f: impl FnOnce(&mut T) -> T,
-            ) -> T {
-                self.try_replace_with(token, f).unwrap()
-            }
-
-            /// Replace the contained data with a new one computed by `f`. Panic if
-            /// `token` doesn't fit in the [`keyhole`](Self::keyhole).
-            ///
-            /// This function corresponds to [`std::mem::replace`].
-            #[inline]
-            pub fn try_replace_with<K: Token<Keyhole>>(
-                &self,
-                token: &mut K,
-                f: impl FnOnce(&mut T) -> T,
-            ) -> Result<T, BadTokenError> {
-                let inner = self.try_write(token)?;
-                let new = f(inner);
-                Ok(std_core::mem::replace(inner, new))
-            }
-
-            /// Swap the contained data with the contained data of `other`. Panic if
-            /// `token` doesn't fit in the [`keyhole`](Self::keyhole) of both
-            /// `TokenLock`s.
-            ///
-            /// This function corresponds to [`std::mem::swap`].
-            #[inline]
-            pub fn swap<IOther, K: Token<Keyhole> + Token<IOther>>(
-                &self,
-                token: &mut K,
-                other: &$ty<T, IOther>,
-            ) {
-                self.try_swap(token, other).unwrap()
-            }
-
-            /// Swap the contained data with the contained data of `other`. Return
-            /// `BadTokenError` if `token` doesn't fit in the
-            /// [`keyhole`](Self::keyhole) of both `TokenLock`s.
-            #[inline]
-            pub fn try_swap<
-                IOther,
-                K: Token<Keyhole> + Token<IOther>>(
-                &self,
-                token: &mut K,
-                other: &$ty<T, IOther>,
-            ) -> Result<(), BadTokenError> {
-                // Valiate token
-                let _ = self.try_write(token)?;
-                let _ = other.try_write(token)?;
-
-                // Can't take multiple loans using a single `token`, so we need raw
-                // pointers here.
-                unsafe {
-                    std_core::ptr::swap(self.as_ptr(), other.as_ptr());
+                /// Take the contained data, leaving `Default::default()` in its place.
+                /// Panic if `token` doesn't fit in the [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn take<K: Token<Keyhole>>(&self, token: &mut K) -> T
+                where
+                    T: Default,
+                {
+                    self.replace_with(token, |_| Default::default())
                 }
-                Ok(())
+
+                /// Take the contained data, leaving `Default::default()` in its place.
+                /// Return `BadTokenError` if `token` doesn't fit in the
+                /// [`keyhole`](Self::keyhole).
+                #[inline]
+                pub fn try_take<K: Token<Keyhole>>(&self, token: &mut K) -> Result<T, BadTokenError>
+                where
+                    T: Default,
+                {
+                    self.try_replace_with(token, |_| Default::default())
+                }
+
+                /// Replace the contained data with a new one. Panic if `token` doesn't fit
+                /// in the [`keyhole`](Self::keyhole).
+                ///
+                /// This function corresponds to [`std::mem::replace`].
+                #[inline]
+                pub fn replace<K: Token<Keyhole>>(&self, token: &mut K, t: T) -> T {
+                    std_core::mem::replace(self.write(token), t)
+                }
+
+                /// Replace the contained data with a new one computed by the given
+                /// closure. Panic if `token` doesn't fit in the
+                /// [`keyhole`](Self::keyhole).
+                ///
+                /// This function corresponds to [`std::mem::replace`].
+                #[inline]
+                pub fn replace_with<K: Token<Keyhole>>(
+                    &self,
+                    token: &mut K,
+                    f: impl FnOnce(&mut T) -> T,
+                ) -> T {
+                    self.try_replace_with(token, f).unwrap()
+                }
+
+                /// Replace the contained data with a new one computed by `f`. Panic if
+                /// `token` doesn't fit in the [`keyhole`](Self::keyhole).
+                ///
+                /// This function corresponds to [`std::mem::replace`].
+                #[inline]
+                pub fn try_replace_with<K: Token<Keyhole>>(
+                    &self,
+                    token: &mut K,
+                    f: impl FnOnce(&mut T) -> T,
+                ) -> Result<T, BadTokenError> {
+                    let inner = self.try_write(token)?;
+                    let new = f(inner);
+                    Ok(std_core::mem::replace(inner, new))
+                }
+
+                /// Swap the contained data with the contained data of `other`. Panic if
+                /// `token` doesn't fit in the [`keyhole`](Self::keyhole) of both
+                /// `TokenLock`s.
+                ///
+                /// This function corresponds to [`std::mem::swap`].
+                #[inline]
+                pub fn swap<IOther, K: Token<Keyhole> + Token<IOther>>(
+                    &self,
+                    token: &mut K,
+                    other: &$ty<T, IOther>,
+                ) {
+                    self.try_swap(token, other).unwrap()
+                }
+
+                /// Swap the contained data with the contained data of `other`. Return
+                /// `BadTokenError` if `token` doesn't fit in the
+                /// [`keyhole`](Self::keyhole) of both `TokenLock`s.
+                #[inline]
+                pub fn try_swap<
+                    IOther,
+                    K: Token<Keyhole> + Token<IOther>>(
+                    &self,
+                    token: &mut K,
+                    other: &$ty<T, IOther>,
+                ) -> Result<(), BadTokenError> {
+                    // Valiate token
+                    let _ = self.try_write(token)?;
+                    let _ = other.try_write(token)?;
+
+                    // Can't take multiple loans using a single `token`, so we need raw
+                    // pointers here.
+                    unsafe {
+                        std_core::ptr::swap(self.as_ptr(), other.as_ptr());
+                    }
+                    Ok(())
+                }
             }
         }
 
@@ -639,7 +796,9 @@ macro_rules! impl_common {
 // reference to a token is given. `Unsync` is not necessary if it's a mutable
 // reference because a mutable reference prohibits aliasing.
 impl_common!(TokenLock, [Token<Keyhole>]);
+impl_common!(PinTokenLock, [Token<Keyhole>]);
 impl_common!(UnsyncTokenLock, [Token<Keyhole> + Unsync]);
+impl_common!(UnsyncPinTokenLock, [Token<Keyhole> + Unsync]);
 
 // Tests
 // ----------------------------------------------------------------------------

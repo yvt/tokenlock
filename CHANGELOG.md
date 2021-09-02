@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - (Unstable) `with_branded_token_async`
 - `TokenLock::wrap`, a constructor that default-initializes `Keyhole: TokenId`, provided for convenience
 - `impl Display for {BadTokenError, SingletonTokenExhaustedError}` when `cfg(not(feature = "std"))`
+- `[Unsync]PinTokenLock`
 
 ### Changed
 
