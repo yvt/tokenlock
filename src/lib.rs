@@ -273,6 +273,11 @@ mod branded;
 mod singleton;
 pub use self::{branded::*, singleton::*, singleton_factory::*};
 
+#[cfg(feature = "unstable")]
+mod branded_async;
+#[cfg(feature = "unstable")]
+pub use self::branded_async::*;
+
 /// Trait for an unforgeable token used to access the contents of a
 /// [`TokenLock`]`<_, Keyhole>`.
 ///
