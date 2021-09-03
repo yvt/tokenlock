@@ -400,6 +400,22 @@ unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole
 ///
 /// [pinned]: std_core::pin
 /// [module-level documentation]: index.html
+///
+/// # Examples
+///
+/// ```rust
+/// use std::{pin::Pin, sync::Arc};
+/// use tokenlock::{ArcToken, PinTokenLock};
+/// let mut token = ArcToken::new();
+/// let mut value = 0;
+/// let future = Arc::pin(PinTokenLock::new(token.id(), async { value = 42; }));
+///
+/// // Use `token` to get `Pin<&mut impl Future>`
+/// futures::executor::block_on(Pin::as_ref(&future).write_pin(&mut token));
+/// drop(future);
+///
+/// assert_eq!(value, 42);
+/// ```
 #[derive(Default)]
 pub struct PinTokenLock<T: ?Sized, Keyhole> {
     keyhole: Keyhole,
