@@ -1,6 +1,6 @@
 [package]
 name = "tokenlock"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["yvt <i@yvt.jp>"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
