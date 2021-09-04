@@ -17,9 +17,9 @@
 //!
 //! ```
 //! # use tokenlock::*;
-//! let mut token = ArcToken::new();
+//! let mut token = IcToken::new();
 //!
-//! let lock = TokenLock::new(token.id(), 1);
+//! let lock: IcTokenLock<i32> = TokenLock::new(token.id(), 1);
 //! assert_eq!(*lock.read(&token), 1);
 //!
 //! let mut guard = lock.write(&mut token);
@@ -58,7 +58,7 @@
 //! ```compile_fail
 //! # use tokenlock::*;
 //! # use std::mem::drop;
-//! let mut token = ArcToken::new();
+//! let mut token = IcToken::new();
 //! let lock = TokenLock::new(token.id(), 1);
 //! let guard = lock.write(&mut token);
 //! drop(lock); // compile error: `guard` cannot outlive `TokenLock`
