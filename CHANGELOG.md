@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `impl Display for {BadTokenError, SingletonTokenExhaustedError}` when `cfg(not(feature = "std"))`
 - `[Unsync]PinTokenLock`
 - `*TokenLock::{set, try_set}`
+- `SingletonTokenLock<T, Tag>` (an alias of `TokenLock<T, SingletonTokenId<Tag>>`) and its variations
 
 ### Changed
 

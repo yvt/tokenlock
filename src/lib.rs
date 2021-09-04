@@ -129,7 +129,7 @@
 //! struct Tag;
 //! impl_singleton_token_factory!(Tag);
 //!
-//! type KLock<T> = UnsyncTokenLock<T, SingletonTokenId<Tag>>;
+//! type KLock<T> = UnsyncSingletonTokenLock<T, Tag>;
 //! type KLockToken = UnsyncSingletonToken<Tag>;
 //! type KLockTokenId = SingletonTokenId<Tag>;
 //!

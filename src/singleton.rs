@@ -5,6 +5,30 @@ use super::{Token, Unsync};
 
 pub use crate::singleton_factory::*;
 
+/// A mutual exclusive primitive that can be accessed by presenting a
+/// [`SingletonToken`] with the correct tag type.
+pub type SingletonTokenLock<T, Tag> = crate::TokenLock<T, SingletonTokenId<Tag>>;
+
+/// A [pinned] mutual exclusive primitive that can be accessed by presenting a
+/// [`SingletonToken`] with the correct tag type.
+///
+/// [pinned]: std_core::pin
+pub type SingletonPinTokenLock<T, Tag> = crate::PinTokenLock<T, SingletonTokenId<Tag>>;
+
+/// Like [`SingletonTokenLock`] but requires presenting [`UnsyncSingletonToken`],
+/// which is [`Unsync`]. This subtle difference allows it to be `Sync` even if
+/// `T` is not.
+///
+/// [`Unsync`]: crate::Unsync
+pub type UnsyncSingletonTokenLock<T, Tag> = crate::UnsyncTokenLock<T, SingletonTokenId<Tag>>;
+
+/// Like [`SingletonPinTokenLock`] but requires presenting [`UnsyncSingletonToken`],
+/// which is [`Unsync`]. This subtle difference allows it to be `Sync` even if
+/// `T` is not.
+///
+/// [`Unsync`]: crate::Unsync
+pub type UnsyncSingletonPinTokenLock<T, Tag> = crate::UnsyncPinTokenLock<T, SingletonTokenId<Tag>>;
+
 /// A singleton unforgeable token used to access the contents of a
 /// `TokenLock`.
 ///
