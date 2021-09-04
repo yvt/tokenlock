@@ -11,33 +11,59 @@ from data.
 ### Basics
 
 ```rust
+// Create a token
 let mut token = IcToken::new();
 
+// Create a keyhole by `token.id()` and use this to create a `TokenLock`.
 let lock: IcTokenLock<i32> = TokenLock::new(token.id(), 1);
 assert_eq!(*lock.read(&token), 1);
 
+// Unlock the `TokenLock` using the matching token
 let mut guard = lock.write(&mut token);
 assert_eq!(*guard, 1);
 *guard = 2;
 ```
 
-Only the original `Token`'s owner can access its contents. `Token`
+Only the matching `Token`'s owner can access its contents. `Token`
 cannot be cloned:
 
 ```rust
 let lock = Arc::new(TokenLock::new(token.id(), 1));
 
 let lock_1 = Arc::clone(&lock);
-thread::Builder::new().spawn(move || {
+std::thread::spawn(move || {
     let lock_1 = lock_1;
     let mut token_1 = token;
 
     // I have `Token` so I can get a mutable reference to the contents
     lock_1.write(&mut token_1);
-}).unwrap();
+});
 
 // can't access the contents; I no longer have `Token`
 // lock.write(&mut token);
+```
+
+### Zero-sized tokens
+
+Some token types, such as `BrandedToken` and `SingletonToken`, rely
+solely on type safety and compile-time checks to guarantee uniqueness and
+don't use runtime data for identification. As such, the keyholes for such
+tokens can be default-constructed. `TokenLock::wrap` lets you construct a
+`TokenLock` with a default-constructed keyhole.
+On the other hand, creating such tokens usually has specific requirements.
+See the following example that uses `with_branded_token`:
+
+```rust
+with_branded_token(|mut token| {
+    // The lifetime of `token: BrandedToken<'brand>` is bound to
+    // this closure.
+
+    // lock: BrandedTokenLock<'brand, i32>
+    let lock = BrandedTokenLock::wrap(42);
+
+    lock.set(&mut token, 56);
+    assert_eq!(lock.get(&token), 56);
+});
 ```
 
 ### Lifetimes
@@ -195,7 +221,7 @@ let mut token = ArcToken::new();
 let lock = Arc::new(UnsyncTokenLock::new(token.id(), Cell::new(1)));
 
 let lock_1 = Arc::clone(&lock);
-thread::Builder::new().spawn(move || {
+std::thread::spawn(move || {
     // "Lock" the token to the current thread using
     // `ArcToken::borrow_as_unsync`
     let token = token.borrow_as_unsync();
@@ -205,7 +231,7 @@ thread::Builder::new().spawn(move || {
 
     lock_1.read(token_1).set(2);
     lock_1.read(token_2).set(4);
-}).unwrap();
+});
 ```
 
 `!Sync` tokens, of course, cannot be shared between threads:
@@ -217,7 +243,7 @@ let (token_1, token_2) = (&token, &token);
 
 // compile error: `&ArcTokenUnsyncRef` is not `Send` because
 //                `ArcTokenUnsyncRef` is not `Sync`
-thread::Builder::new().spawn(move || {
+std::thread::spawn(move || {
     let _ = token_2;
 });
 
