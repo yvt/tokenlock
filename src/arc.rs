@@ -1,7 +1,8 @@
 //! [`Arc`]-based tokens
 //!
 //! [`Arc`]: std::sync::Arc
-use std::{hash, marker::PhantomData, sync::Arc};
+use alloc::sync::Arc;
+use core::{hash, marker::PhantomData};
 
 use super::{Token, Unsync};
 
@@ -52,7 +53,7 @@ unsafe impl Token<ArcTokenId> for ArcToken {
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ArcTokenUnsyncRef<'a>(&'a mut UniqueId, PhantomData<MakeUnsync>);
 
-struct MakeUnsync(std::cell::Cell<()>);
+struct MakeUnsync(core::cell::Cell<()>);
 
 impl ArcTokenUnsyncRef<'_> {
     /// Construct an [`ArcTokenId`] that equates to `self`.
@@ -112,6 +113,7 @@ impl UniqueId {
     }
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn unique_id_hash() {
     let id1 = UniqueId::new();

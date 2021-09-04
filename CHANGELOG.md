@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `*TokenLock::{set, try_set}`
 - `SingletonTokenLock<T, Tag>` (an alias of `TokenLock<T, SingletonTokenId<Tag>>`) and its variations
 - `impl_singleton_token_factory!` can now be applied to multiple types in a single macro call
+- `RcToken` and `ArcToken` now only require `cfg(feature = "alloc")`
 
 ### Changed
 

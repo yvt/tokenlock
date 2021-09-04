@@ -14,7 +14,8 @@ edition = "2018"
 
 [features]
 default = ["std"]
-std = ["spin"]
+std = ["spin", "alloc"]
+alloc = []
 unstable = []
 doc_cfg = []
 

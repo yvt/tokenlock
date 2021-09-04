@@ -155,7 +155,7 @@ This crate provides the following types implementing `Token`.
 (**`std` only**) `IcToken` uses a global counter (with thread-local pools)
 to generate unique 128-bit tokens.
 
-(**`std` only**) `RcToken` and `ArcToken` ensure their uniqueness by
+(**`alloc` only**) `RcToken` and `ArcToken` ensure their uniqueness by
 reference-counted memory allocations.
 
 `SingletonToken<Tag>` is a singleton token, meaning only one of such
@@ -226,7 +226,8 @@ let _ = token_1;
 
 ## Cargo Features
 
- - **`std`** enables the items that depend on `std`.
+ - **`std`** enables the items that depend on `std` or `alloc`.
+ - **`alloc`** enables the items that depend on `alloc`.
  - **`unstable`** enables experimental items that are not subject to the
    semver guarantees.
 

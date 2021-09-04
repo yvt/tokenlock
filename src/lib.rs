@@ -180,7 +180,7 @@
 //! (**`std` only**) [`IcToken`] uses a global counter (with thread-local pools)
 //! to generate unique 128-bit tokens.
 //!
-//! (**`std` only**) [`RcToken`] and [`ArcToken`] ensure their uniqueness by
+//! (**`alloc` only**) [`RcToken`] and [`ArcToken`] ensure their uniqueness by
 //! reference-counted memory allocations.
 //!
 //! [`SingletonToken`]`<Tag>` is a singleton token, meaning only one of such
@@ -258,7 +258,8 @@
 //!
 //! # Cargo Features
 //!
-//!  - **`std`** enables the items that depend on `std`.
+//!  - **`std`** enables the items that depend on `std` or `alloc`.
+//!  - **`alloc`** enables the items that depend on `alloc`.
 //!  - **`unstable`** enables experimental items that are not subject to the
 //!    semver guarantees.
 //!
@@ -296,6 +297,8 @@
 #![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
 #[cfg(not(feature = "std"))]
 #[doc(hidden)]
 pub extern crate core as std_core;
@@ -313,19 +316,24 @@ use self::std_core::{fmt, pin::Pin};
 #[doc = include_str!("../CHANGELOG.md")]
 pub mod _changelog_ {}
 
-#[cfg(feature = "std")]
-#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
+#[cfg(feature = "alloc")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "alloc")))]
 pub mod arc;
+#[cfg(feature = "alloc")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "alloc")))]
+pub mod rc;
+#[cfg(feature = "alloc")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "alloc")))]
+#[doc(no_inline)]
+pub use self::{arc::*, rc::*};
+
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 pub mod ic;
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
-pub mod rc;
-#[cfg(feature = "std")]
-#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 #[doc(no_inline)]
-pub use self::{arc::*, ic::*, rc::*};
+pub use self::ic::*;
 
 mod singleton_factory;
 
@@ -888,7 +896,7 @@ impl_common!(UnsyncPinTokenLock, [Token<Keyhole> + Unsync]);
 // ----------------------------------------------------------------------------
 
 #[test]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 fn basic() {
     let mut token = ArcToken::new();
     let lock = TokenLock::new(token.id(), 1);
@@ -899,7 +907,7 @@ fn basic() {
 }
 
 #[test]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 fn bad_token() {
     let token1 = ArcToken::new();
     let mut token2 = ArcToken::new();
@@ -908,7 +916,7 @@ fn bad_token() {
 }
 
 #[test]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 fn unsend_basic() {
     let mut token = RcToken::new();
     let lock = UnsyncTokenLock::new(token.id(), 1);
@@ -919,7 +927,7 @@ fn unsend_basic() {
 }
 
 #[test]
-#[cfg(feature = "std")]
+#[cfg(feature = "alloc")]
 fn unsend_bad_token() {
     let token1 = RcToken::new();
     let mut token2 = RcToken::new();

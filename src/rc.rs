@@ -1,7 +1,8 @@
 //! [`Rc`]-based tokens
 //!
 //! [`Rc`]: std::rc::Rc
-use std::{hash, rc::Rc};
+use alloc::rc::Rc;
+use core::hash;
 
 use super::{Token, Unsync};
 
@@ -82,6 +83,7 @@ impl UniqueId {
     }
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn unique_id_hash() {
     let id1 = UniqueId::new();

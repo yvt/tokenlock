@@ -29,8 +29,10 @@ jobs:
           - "riscv64imac-unknown-none-elf"
         features:
           - ""
+          - "alloc"
           - "std"
           - "unstable"
+          - "alloc,unstable"
           - "std,unstable"
         exclude:
           - { target: "riscv64imac-unknown-none-elf", features: "std" }
