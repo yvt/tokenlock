@@ -9,20 +9,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- `IcToken` (counter-based tokens)
-- `BrandedToken` and `with_branded_token` (a GhostCell implementation)
-- (Unstable) `with_branded_token_async`
-- `TokenLock::wrap`, a constructor that default-initializes `Keyhole: TokenId`, provided for convenience
-- `impl Display for {BadTokenError, SingletonTokenExhaustedError}` when `cfg(not(feature = "std"))`
-- `[Unsync]PinTokenLock`
-- `*TokenLock::{set, try_set}`
-- `SingletonTokenLock<T, Tag>` (an alias of `TokenLock<T, SingletonTokenId<Tag>>`) and its variations
-- `impl_singleton_token_factory!` can now be applied to multiple types in a single macro call
-- `RcToken` and `ArcToken` now only require `cfg(feature = "alloc")`
+- New token types
+	- `IcToken` (counter-based tokens)
+	- `BrandedToken` and `with_branded_token` (a GhostCell implementation)
+		- (Unstable) `with_branded_token_async`
+- Trait implementations
+	- `impl Display for {BadTokenError, SingletonTokenExhaustedError}` when `cfg(not(feature = "std"))`
+- `TokenLock` operations
+	- `TokenLock::wrap`, a constructor that default-initializes `Keyhole: TokenId`, provided for convenience
+	- `*TokenLock::{set, try_set}`, which assign a new value and discard the old one
+- `TokenLock` variants
+	- `[Unsync]PinTokenLock`
+- Miscellaneous
+	- `SingletonTokenLock<T, Tag>` (an alias of `TokenLock<T, SingletonTokenId<Tag>>`) and its variants
 
 ### Changed
 
 - Raise the minimum supported Rust version to 1.54.0 (MSRV changes are not considered semver-breaking anymore.)
+- `RcToken` and `ArcToken` now only require `cfg(feature = "alloc")`
+- `impl_singleton_token_factory!` can now be applied to multiple types in a single macro call
 
 ## [0.3.4] - 2021-01-31
 
