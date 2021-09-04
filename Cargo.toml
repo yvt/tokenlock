@@ -14,18 +14,23 @@ edition = "2018"
 
 [features]
 default = ["std"]
-std = []
+std = ["spin"]
 unstable = []
 doc_cfg = []
 
 [badges]
 maintenance = { status = "passively-maintained" }
 
+[dependencies]
+spin = { version = "0.9.2", optional = true }
+
 [dev-dependencies]
 rayon = "1.5.1"
 futures = "0.3.17"
 tokio = { version = "1.11.0", features = ["rt-multi-thread"] }
 async-scoped = { version = "0.7.0", features = ["use-tokio"] }
+log = "0.4"
+env_logger = "0.9"
 
 [package.metadata.docs.rs]
 all-features = true

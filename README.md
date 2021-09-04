@@ -152,6 +152,9 @@ data is not `Sync`, just like `std::sync::Mutex`.</sub>
 
 This crate provides the following types implementing `Token`.
 
+(**`std` only**) `IcToken` uses a global counter (with thread-local pools)
+to generate unique 128-bit tokens.
+
 (**`std` only**) `RcToken` and `ArcToken` ensure their uniqueness by
 reference-counted memory allocations.
 
@@ -169,12 +172,13 @@ created `Future`. This token incurs no runtime cost.
 
 [1]: http://plv.mpi-sws.org/rustbelt/ghostcell/
 
-| Token ID (keyhole)             | Token (key)                  |
-| ------------------------------ | ---------------------------- |
-| `RcTokenId`                    | `RcToken` + runtime check    |
-| `ArcTokenId`                   | `ArcToken` + runtime check   |
-| `SingletonTokenId<Tag>`        | `SingletonToken<Tag>`        |
-| `BrandedTokenId<'brand>`       | `BrandedToken<'brand>`       |
+| Token ID (keyhole)             | Token (key)                       |
+| ------------------------------ | --------------------------------- |
+| `IcTokenId`                    | `IcToken` + `u128` comparison     |
+| `RcTokenId`                    | `RcToken` + `usize` comparison    |
+| `ArcTokenId`                   | `ArcToken` + `usize` comparison   |
+| `SingletonTokenId<Tag>`        | `SingletonToken<Tag>`             |
+| `BrandedTokenId<'brand>`       | `BrandedToken<'brand>`            |
 
 ## `!Sync` tokens
 

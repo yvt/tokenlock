@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `IcToken` (counter-based tokens)
 - `BrandedToken` and `with_branded_token` (a GhostCell implementation)
 - (Unstable) `with_branded_token_async`
 - `TokenLock::wrap`, a constructor that default-initializes `Keyhole: TokenId`, provided for convenience

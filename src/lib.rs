@@ -177,6 +177,9 @@
 //!
 //! This crate provides the following types implementing [`Token`].
 //!
+//! (**`std` only**) [`IcToken`] uses a global counter (with thread-local pools)
+//! to generate unique 128-bit tokens.
+//!
 //! (**`std` only**) [`RcToken`] and [`ArcToken`] ensure their uniqueness by
 //! reference-counted memory allocations.
 //!
@@ -194,12 +197,13 @@
 //!
 //! [1]: http://plv.mpi-sws.org/rustbelt/ghostcell/
 //!
-//! | Token ID (keyhole)             | Token (key)                  |
-//! | ------------------------------ | ---------------------------- |
-//! | [`RcTokenId`]                  | [`RcToken`] + runtime check  |
-//! | [`ArcTokenId`]                 | [`ArcToken`] + runtime check |
-//! | [`SingletonTokenId`]`<Tag>`    | [`SingletonToken`]`<Tag>`    |
-//! | [`BrandedTokenId`]`<'brand>`   | [`BrandedToken`]`<'brand>`   |
+//! | Token ID (keyhole)             | Token (key)                       |
+//! | ------------------------------ | --------------------------------- |
+//! | [`IcTokenId`]                  | [`IcToken`] + `u128` comparison   |
+//! | [`RcTokenId`]                  | [`RcToken`] + `usize` comparison  |
+//! | [`ArcTokenId`]                 | [`ArcToken`] + `usize` comparison |
+//! | [`SingletonTokenId`]`<Tag>`    | [`SingletonToken`]`<Tag>`         |
+//! | [`BrandedTokenId`]`<'brand>`   | [`BrandedToken`]`<'brand>`        |
 //!
 //! # `!Sync` tokens
 //!
@@ -305,11 +309,14 @@ pub mod _changelog_ {}
 pub mod arc;
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
+pub mod ic;
+#[cfg(feature = "std")]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 pub mod rc;
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]
 #[doc(no_inline)]
-pub use self::{arc::*, rc::*};
+pub use self::{arc::*, ic::*, rc::*};
 
 mod singleton_factory;
 
