@@ -40,13 +40,15 @@ pub unsafe trait SingletonTokenFactory {
     unsafe fn r#return();
 }
 
-/// Implement [`SingletonTokenFactory`] on a given type.
+/// Implement [`SingletonTokenFactory`] on given types.
 ///
 /// The generated implementation uses `AtomicBool` and therefore might not
 /// compile on some targets.
+///
+/// See [`SingletonToken::new`] for an example.
 #[macro_export]
 macro_rules! impl_singleton_token_factory {
-    ($ty:ty $(,)*) => {
+    ($($ty:ty),* $(,)*) => {$(
         impl $crate::SingletonTokenFactoryStorage for $ty {
             #[inline]
             unsafe fn __stfs_token_issued() -> &'static $crate::std_core::sync::atomic::AtomicBool {
@@ -75,7 +77,7 @@ macro_rules! impl_singleton_token_factory {
                 token_issued.store(false, Ordering::Release);
             }
         }
-    };
+    )*};
 }
 
 /// Internal use only
