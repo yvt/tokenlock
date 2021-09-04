@@ -276,7 +276,7 @@ let _ = token_1;
    mechanisms. `QCell` uses a 32-bit integer as a token identifier, `TCell`
    and `TLCell` use a marker type, and `LCell` uses lifetime branding.
 
- - `TokenCell` from [`token-cell`][6] is related to our [`SingletonToken`],
+ - `TokenCell` from [`token-cell`][6] is related to our `SingletonToken`,
    but like `SCell` (but differing slightly), it supports transposition
    from `&TokenCell<Token, &[T]>` to `&[TokenCell<Token, T>]`. It uses a
    custom trait to mark singleton token types.
