@@ -272,17 +272,26 @@
 //!    `GhostCell` and accepts any singleton token types, and thus it's more
 //!    closer to our `TokenLock`. It provides equivalents of our
 //!    [`BrandedToken`] and [`SingletonToken`] out-of-box. It trades away
-//!    non-ZST token types for a unique advantage: `SCell<Key, [T]>` can be
-//!    transposed to `[SCell<Key, T>]`.
+//!    non-ZST token types for an advantage: `SCell<Key, [T]>` can be transposed
+//!    to `[SCell<Key, T>]`. It uses the [`singleton-trait`][5] crate (which did
+//!    not exist when `tokenlock::SingletonToken` was added) to mark singleton
+//!    token types.
 //!
 //!  - [`qcell`][4] provides multiple cell types with different check
 //!    mechanisms. `QCell` uses a 32-bit integer as a token identifier, `TCell`
 //!    and `TLCell` use a marker type, and `LCell` uses lifetime branding.
 //!
+//!  - `TokenCell` from [`token-cell`][6] is related to our [`SingletonToken`],
+//!    but like `SCell` (but differing slightly), it supports transposition
+//!    from `&TokenCell<Token, &[T]>` to `&[TokenCell<Token, T>]`. It uses a
+//!    custom trait to mark singleton token types.
+//!
 //! [1]: https://crates.io/crates/ghost-cell
 //! [2]: http://plv.mpi-sws.org/rustbelt/ghostcell/
 //! [3]: https://crates.io/crates/singleton-cell
 //! [4]: https://crates.io/crates/qcell
+//! [5]: https://crates.io/crates/singleton-trait
+//! [6]: https://crates.io/crates/token-cell
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
