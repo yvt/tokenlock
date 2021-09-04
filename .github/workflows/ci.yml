@@ -22,28 +22,49 @@ jobs:
     name: Test
     runs-on: ubuntu-20.04
     timeout-minutes: 10
+    strategy:
+      matrix:
+        target:
+          - ""
+          - "riscv64imac-unknown-none-elf"
+        features:
+          - ""
+          - "std"
+          - "unstable"
+          - "std,unstable"
+        exclude:
+          - { target: "riscv64imac-unknown-none-elf", features: "std" }
+          - { target: "riscv64imac-unknown-none-elf", features: "std,unstable" }
+      fail-fast: false
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
+
+      # No-`std` target is needed to really test `no_std`
+      - name: Install the target standard library
+        if: ${{ matrix.target != '' }}
+        run: |
+          rustup target add ${{ matrix.target }}
+
+      - name: Derive `--target` parameter
+        if: ${{ matrix.target != '' }}
+        run: echo "target_param=--target ${{ matrix.target }}" >> $GITHUB_ENV
+
+      - name: Skip doctests if `not(feature = "std")`
+        if: ${{ !startsWith(matrix.features, 'std') }}
+        run: echo "test_param=--lib" >> $GITHUB_ENV
+
+      - name: cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -p tokenlock ${{ env.target_param }} --no-default-features --features "${{ matrix.features }}"
+
       - name: cargo test
         uses: actions-rs/cargo@v1
+        if: ${{ matrix.target == '' }}
         with:
           command: test
-          args: -p tokenlock
-      - name: cargo test --features std
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p tokenlock --features std
-      - name: cargo test --features unstable
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p tokenlock --features unstable
-      - name: cargo test --features std,unstable
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p tokenlock --features std,unstable
+          args: -p tokenlock ${{ env.target_param }} --no-default-features --features "${{ matrix.features }}" ${{ env.test_param }}
