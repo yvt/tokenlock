@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+- `const-default_1` Cargo feature, which enables the implementation of [`ConstDefault`](https://docs.rs/const-default/1.0.0/const_default/trait.ConstDefault.html) from [`const-default ^1`](https://crates.io/crates/const-default/1.0.0).
+
 ## [0.3.5] - 2021-09-04
 
 ### Added

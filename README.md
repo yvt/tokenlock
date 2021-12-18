@@ -256,6 +256,10 @@ let _ = token_1;
  - **`alloc`** enables the items that depend on `alloc`.
  - **`unstable`** enables experimental items that are not subject to the
    semver guarantees.
+ - **`const-default_1`** enables the implementation of `ConstDefault` from
+   [`const-default ^1`][].
+
+[`const-default ^1`]: https://crates.io/crates/const-default/1.0.0
 
 ## Related Work
 

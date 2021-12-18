@@ -25,6 +25,12 @@ maintenance = { status = "passively-maintained" }
 [dependencies]
 spin = { version = "0.9.2", optional = true }
 
+[dependencies.const-default_1]
+package = "const-default"
+version = "1"
+optional = true
+default-features = false
+
 [dev-dependencies]
 rayon = "1.5.1"
 futures = "0.3.17"

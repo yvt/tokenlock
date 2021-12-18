@@ -286,6 +286,10 @@
 //!  - **`alloc`** enables the items that depend on `alloc`.
 //!  - **`unstable`** enables experimental items that are not subject to the
 //!    semver guarantees.
+//!  - **`const-default_1`** enables the implementation of `ConstDefault` from
+//!    [`const-default ^1`][].
+//!
+//! [`const-default ^1`]: https://crates.io/crates/const-default/1.0.0
 //!
 //! # Related Work
 //!
@@ -548,6 +552,17 @@ macro_rules! impl_common {
                     .field("keyhole", &self.keyhole)
                     .finish()
             }
+        }
+
+        #[cfg(feature = "const-default_1")]
+        impl<
+            T: const_default_1::ConstDefault,
+            Keyhole: const_default_1::ConstDefault
+        > const_default_1::ConstDefault for $ty<T, Keyhole> {
+            const DEFAULT: Self = Self {
+                keyhole: const_default_1::ConstDefault::DEFAULT,
+                data: const_default_1::ConstDefault::DEFAULT,
+            };
         }
 
         /// # Construction and Destruction
