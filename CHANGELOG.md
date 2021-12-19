@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- `SingletonTokenId: `[`ConstDefault`](https://docs.rs/const-default/1.0.0/const_default/trait.ConstDefault.html) if the `const-default_1` Cargo feature is enabled
+
 ## [0.3.6] - 2021-12-19
 
 ### Added

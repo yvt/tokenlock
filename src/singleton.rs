@@ -559,6 +559,11 @@ impl<Tag: ?Sized> Default for SingletonTokenId<Tag> {
     }
 }
 
+#[cfg(feature = "const-default_1")]
+impl<Tag: ?Sized> const_default_1::ConstDefault for SingletonTokenId<Tag> {
+    const DEFAULT: Self = Self::new();
+}
+
 impl<Tag: ?Sized> fmt::Debug for SingletonTokenId<Tag> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
