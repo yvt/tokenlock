@@ -49,6 +49,8 @@ jobs:
           # older toolchains
           - { toolchain: "1.54.0", features: "std,unstable" }
           - { toolchain: "1.60.0", features: "std,unstable" }
+          # Loom
+          - { features: "std,unstable", loom: "loom" }
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
@@ -75,6 +77,10 @@ jobs:
       - name: Skip doctests if `not(feature = "std")`
         if: ${{ !startsWith(matrix.features, 'std') }}
         run: echo "test_param=--lib" >> $GITHUB_ENV
+      
+      - name: Enable Loom
+        if: ${{ matrix.loom == 'loom' }}
+        run: echo "RUSTFLAGS=--cfg loom" >> $GITHUB_ENV
 
       - name: cargo build
         uses: actions-rs/cargo@v1
