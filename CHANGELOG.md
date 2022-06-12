@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Support for targets with limited or no atomics support. Requires `cfg(target_has_atomic = ...)` [stabilized][1] in Rust 1.60.0.
+
+[1]: https://github.com/rust-lang/rust/pull/93824
+
 ## [0.3.7] - 2021-12-19
 
 ### Added
