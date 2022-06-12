@@ -57,31 +57,29 @@ macro_rules! impl_singleton_token_factory {
         impl $crate::SingletonTokenFactoryStorage for $ty {
             #[inline]
             unsafe fn __stfs_token_issued() -> &'static $crate::core::sync::atomic::AtomicBool {
-                use $crate::core::sync::atomic::AtomicBool;
                 // The initialization by `false` (instead of `true`) ensures
                 // that the variable is placed in `.bss`, not `.data`.
-                static TOKEN_ISSUED: AtomicBool = AtomicBool::new(false);
+                static TOKEN_ISSUED: $crate::core::sync::atomic::AtomicBool =
+                    $crate::core::sync::atomic::AtomicBool::new(false);
                 &TOKEN_ISSUED
             }
         }
 
         unsafe impl $crate::SingletonTokenFactory for $ty {
             #[inline]
-            fn take() -> bool {
-                use $crate::core::sync::atomic::Ordering;
+            fn take() -> $crate::core::primitive::bool {
                 let token_issued =
                     unsafe { <$ty as $crate::SingletonTokenFactoryStorage>::__stfs_token_issued() };
-                !token_issued.swap(true, Ordering::Acquire)
+                !token_issued.swap(true, $crate::core::sync::atomic::Ordering::Acquire)
             }
             // The inner `unsafe` block is redundant only if `unsafe_op_in_unsafe_fn`
             // (https://github.com/rust-lang/rust/issues/71668) is set to "allow".
             #[allow(unused_unsafe)]
             #[inline]
             unsafe fn r#return() {
-                use $crate::core::sync::atomic::Ordering;
                 let token_issued =
                     unsafe { <$ty as $crate::SingletonTokenFactoryStorage>::__stfs_token_issued() };
-                token_issued.store(false, Ordering::Release);
+                token_issued.store(false, $crate::core::sync::atomic::Ordering::Release);
             }
         }
     )*};

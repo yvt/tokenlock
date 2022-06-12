@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Support for targets with limited or no atomics support. Requires `cfg(target_has_atomic = ...)` [stabilized][1] in Rust 1.60.0.
 
+### Fixed
+
+- `impl_singleton_token_factory!` is now more resistant to exotic environments (e.g., `type bool = u32` in an outer scope).
+
 [1]: https://github.com/rust-lang/rust/pull/93824
 
 ## [0.3.7] - 2021-12-19
