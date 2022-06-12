@@ -58,6 +58,8 @@ macro_rules! impl_singleton_token_factory {
             #[inline]
             unsafe fn __stfs_token_issued() -> &'static $crate::core::sync::atomic::AtomicBool {
                 use $crate::core::sync::atomic::AtomicBool;
+                // The initialization by `false` (instead of `true`) ensures
+                // that the variable is placed in `.bss`, not `.data`.
                 static TOKEN_ISSUED: AtomicBool = AtomicBool::new(false);
                 &TOKEN_ISSUED
             }
