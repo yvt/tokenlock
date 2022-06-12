@@ -27,6 +27,8 @@ jobs:
         target:
           - ""
           - "riscv64imac-unknown-none-elf"
+          - "riscv32i-unknown-none-elf"
+          - "thumbv6m-none-eabi"
         features:
           - ""
           - "alloc"
@@ -37,6 +39,10 @@ jobs:
         exclude:
           - { target: "riscv64imac-unknown-none-elf", features: "std" }
           - { target: "riscv64imac-unknown-none-elf", features: "std,unstable" }
+          - { target: "riscv32i-unknown-none-elf", features: "std" }
+          - { target: "riscv32i-unknown-none-elf", features: "std,unstable" }
+          - { target: "thumbv6m-none-eabi", features: "std" }
+          - { target: "thumbv6m-none-eabi", features: "std,unstable" }
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
