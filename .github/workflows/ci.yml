@@ -24,9 +24,13 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
+        toolchain:
+          - ""  # default
         target:
           - ""
           - "riscv64imac-unknown-none-elf"
+          - "riscv32i-unknown-none-elf"
+          - "thumbv6m-none-eabi"
         features:
           - ""
           - "alloc"
@@ -37,9 +41,23 @@ jobs:
         exclude:
           - { target: "riscv64imac-unknown-none-elf", features: "std" }
           - { target: "riscv64imac-unknown-none-elf", features: "std,unstable" }
+          - { target: "riscv32i-unknown-none-elf", features: "std" }
+          - { target: "riscv32i-unknown-none-elf", features: "std,unstable" }
+          - { target: "thumbv6m-none-eabi", features: "std" }
+          - { target: "thumbv6m-none-eabi", features: "std,unstable" }
+        include:
+          # older toolchains
+          - { toolchain: "1.54.0", features: "std,unstable" }
+          - { toolchain: "1.60.0", features: "std,unstable" }
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+      
+      - name: Change the target toolchain
+        if: ${{ matrix.toolchain != '' }}
+        run: |
+          echo ${{ matrix.toolchain }} > rust-toolchain
+      
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal

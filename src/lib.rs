@@ -342,16 +342,39 @@ use core::{fmt, pin::Pin};
 #[doc = include_str!("../CHANGELOG.md")]
 pub mod _changelog_ {}
 
-#[cfg(feature = "alloc")]
-#[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "alloc")))]
+#[cfg(all(
+    feature = "alloc",
+    any(
+        all(compiler_has_cfg_target_has_atomic, target_has_atomic = "ptr"),
+        not(compiler_has_cfg_target_has_atomic)
+    )
+))]
+#[cfg_attr(
+    feature = "doc_cfg",
+    doc(cfg(all(feature = "alloc", target_has_atomic = "ptr")))
+)]
 pub mod arc;
+#[cfg(all(
+    feature = "alloc",
+    any(
+        all(compiler_has_cfg_target_has_atomic, target_has_atomic = "ptr"),
+        not(compiler_has_cfg_target_has_atomic)
+    )
+))]
+#[cfg_attr(
+    feature = "doc_cfg",
+    doc(cfg(all(feature = "alloc", target_has_atomic = "ptr")))
+)]
+#[doc(no_inline)]
+pub use self::arc::*;
+
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "alloc")))]
 pub mod rc;
 #[cfg(feature = "alloc")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "alloc")))]
 #[doc(no_inline)]
-pub use self::{arc::*, rc::*};
+pub use self::rc::*;
 
 #[cfg(feature = "std")]
 #[cfg_attr(feature = "doc_cfg", doc(cfg(feature = "std")))]

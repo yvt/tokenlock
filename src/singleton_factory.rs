@@ -1,4 +1,4 @@
-use core::{fmt, mem, ops, sync::atomic::AtomicBool};
+use core::{fmt, mem, ops};
 
 use crate::singleton::{SingletonToken, SingletonTokenVariant, SyncVariant, UnsyncVariant};
 
@@ -46,6 +46,11 @@ pub unsafe trait SingletonTokenFactory {
 /// compile on some targets.
 ///
 /// See [`SingletonToken::new`] for an example.
+#[cfg(any(
+    all(compiler_has_cfg_target_has_atomic, target_has_atomic = "8"),
+    not(compiler_has_cfg_target_has_atomic)
+))]
+#[cfg_attr(feature = "doc_cfg", doc(cfg(target_has_atomic = "8")))]
 #[macro_export]
 macro_rules! impl_singleton_token_factory {
     ($($ty:ty),* $(,)*) => {$(
@@ -82,8 +87,12 @@ macro_rules! impl_singleton_token_factory {
 
 /// Internal use only
 #[doc(hidden)]
+#[cfg(any(
+    all(compiler_has_cfg_target_has_atomic, target_has_atomic = "8"),
+    not(compiler_has_cfg_target_has_atomic)
+))]
 pub trait SingletonTokenFactoryStorage {
-    unsafe fn __stfs_token_issued() -> &'static AtomicBool;
+    unsafe fn __stfs_token_issued() -> &'static core::sync::atomic::AtomicBool;
 }
 
 impl<Tag: ?Sized + SingletonTokenFactory, Variant> Drop for SingletonTokenGuard<Tag, Variant> {

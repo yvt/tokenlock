@@ -39,5 +39,8 @@ async-scoped = { version = "0.7.0", features = ["use-tokio"] }
 log = "0.4"
 env_logger = "0.9"
 
+[build-dependencies]
+rustc_version = "0.4.0"
+
 [package.metadata.docs.rs]
 all-features = true
