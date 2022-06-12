@@ -289,6 +289,11 @@
 //!
 //! [`const-default ^1`]: https://crates.io/crates/const-default/1.0.0
 //!
+//! ## Loom Support
+//!
+//! This crate supports [Loom][7], enabled by `RUSTFLAGS="--cfg loom"`. The
+//! support is not subject to the semver guarantees.
+//!
 //! # Related Work
 //!
 //!  - [`ghost-cell`][1] is the official implementation of [`GhostCell`][2] and
@@ -319,6 +324,7 @@
 //! [4]: https://crates.io/crates/qcell
 //! [5]: https://crates.io/crates/singleton-trait
 //! [6]: https://crates.io/crates/token-cell
+//! [7]: https://crates.io/crates/loom
 #![no_std]
 #![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
@@ -330,7 +336,6 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-use core::cell::UnsafeCell;
 use core::{fmt, pin::Pin};
 
 // Modules
@@ -392,6 +397,8 @@ pub use self::{branded::*, singleton::*};
 #[cfg(feature = "unstable")]
 mod branded_async;
 
+mod sync;
+
 // Traits
 // ----------------------------------------------------------------------------
 
@@ -433,7 +440,7 @@ pub unsafe trait Unsync {}
 #[derive(Default)]
 pub struct TokenLock<T: ?Sized, Keyhole> {
     keyhole: Keyhole,
-    data: UnsafeCell<T>,
+    data: sync::UnsafeCell<T>,
 }
 
 // Safety: `TokenLock` does not allow more multi-thread uses of `T` than a bare
@@ -450,7 +457,7 @@ unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for TokenLock<T, Keyhol
 #[derive(Default)]
 pub struct UnsyncTokenLock<T: ?Sized, Keyhole> {
     keyhole: Keyhole,
-    data: UnsafeCell<T>,
+    data: sync::UnsafeCell<T>,
 }
 
 // Safety: In addition to what `TokenLock`'s guarantees, Non-`Sync`-ness of
@@ -490,7 +497,7 @@ unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole
 #[derive(Default)]
 pub struct PinTokenLock<T: ?Sized, Keyhole> {
     keyhole: Keyhole,
-    data: UnsafeCell<T>,
+    data: sync::UnsafeCell<T>,
 }
 
 // Safety: See `TokenLock`.
@@ -512,7 +519,7 @@ unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for PinTokenLock<T, Key
 #[derive(Default)]
 pub struct UnsyncPinTokenLock<T: ?Sized, Keyhole> {
     keyhole: Keyhole,
-    data: UnsafeCell<T>,
+    data: sync::UnsafeCell<T>,
 }
 
 // Safety: See `UnsyncTokenLock`.
@@ -592,7 +599,7 @@ macro_rules! impl_common {
             pub const fn new(keyhole: Keyhole, data: T) -> Self {
                 Self {
                     keyhole,
-                    data: UnsafeCell::new(data),
+                    data: sync::UnsafeCell::new(data),
                 }
             }
 
@@ -622,6 +629,11 @@ macro_rules! impl_common {
             }
 
             /// Get a raw pointer to the contained data.
+            ///
+            /// **Warning:** When running under [Loom][1], this method does not
+            /// correctly track the access to the contained data.
+            ///
+            /// [1]: crate#loom-suppoprt
             #[inline]
             pub const fn as_ptr(&self) -> *mut T {
                 self.data.get()
