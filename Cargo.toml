@@ -31,6 +31,9 @@ version = "1"
 optional = true
 default-features = false
 
+[target.'cfg(loom)'.dependencies]
+loom = "0.5"
+
 [dev-dependencies]
 rayon = "1.5.1"
 futures = "0.3.17"
