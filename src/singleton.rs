@@ -1,5 +1,5 @@
 //! Singleton tokens
-use crate::std_core::{cell, fmt, hash, marker::PhantomData, ops, ptr::NonNull};
+use core::{cell, fmt, hash, marker::PhantomData, ops, ptr::NonNull};
 
 use super::{Token, Unsync};
 
@@ -12,7 +12,7 @@ pub type SingletonTokenLock<T, Tag> = crate::TokenLock<T, SingletonTokenId<Tag>>
 /// A [pinned] mutual exclusive primitive that can be accessed by presenting a
 /// [`SingletonToken`] with the correct tag type.
 ///
-/// [pinned]: std_core::pin
+/// [pinned]: core::pin
 pub type SingletonPinTokenLock<T, Tag> = crate::PinTokenLock<T, SingletonTokenId<Tag>>;
 
 /// Like [`SingletonTokenLock`] but requires presenting [`UnsyncSingletonToken`],

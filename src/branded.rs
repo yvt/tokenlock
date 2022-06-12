@@ -54,7 +54,7 @@ pub type BrandedTokenLock<'brand, T> = TokenLock<T, BrandedTokenId<'brand>>;
 /// A [pinned] mutual exclusive primitive that can be accessed by presenting a
 /// [`BrandedToken`] with the correct brand lifetime parameter.
 ///
-/// [pinned]: std_core::pin
+/// [pinned]: core::pin
 pub type BrandedPinTokenLock<'brand, T> = PinTokenLock<T, BrandedTokenId<'brand>>;
 
 /// Like [`BrandedTokenLock`] but requires presenting [`UnsyncBrandedToken`],

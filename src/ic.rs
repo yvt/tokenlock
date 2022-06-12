@@ -5,6 +5,7 @@
 //! memory consumption is proportional to the maximum number of threads that
 //! existed simultaneously because the memory allocated to hold a freelist is
 //! never released.
+use alloc::boxed::Box;
 use spin::Mutex;
 use std::{cell::Cell, fmt, marker::PhantomData, num::NonZeroU64};
 
@@ -17,7 +18,7 @@ pub type IcTokenLock<T> = TokenLock<T, IcTokenId>;
 /// A [pinned] mutual exclusive primitive that can be accessed by presenting the
 /// matching [`IcToken`].
 ///
-/// [pinned]: std_core::pin
+/// [pinned]: core::pin
 pub type IcPinTokenLock<T> = PinTokenLock<T, IcTokenId>;
 
 /// Like [`IcTokenLock`] but requires presenting [`IcTokenUnsyncRef`],
@@ -266,7 +267,7 @@ mod pool {
         }
     }
 
-    thread_local! {
+    std::thread_local! {
         static LOCAL_LEASE: FreelistLease = FreelistLease::new();
     }
 

@@ -1,4 +1,4 @@
-use crate::std_core::{fmt, mem, ops, sync::atomic::AtomicBool};
+use core::{fmt, mem, ops, sync::atomic::AtomicBool};
 
 use crate::singleton::{SingletonToken, SingletonTokenVariant, SyncVariant, UnsyncVariant};
 
@@ -51,8 +51,8 @@ macro_rules! impl_singleton_token_factory {
     ($($ty:ty),* $(,)*) => {$(
         impl $crate::SingletonTokenFactoryStorage for $ty {
             #[inline]
-            unsafe fn __stfs_token_issued() -> &'static $crate::std_core::sync::atomic::AtomicBool {
-                use $crate::std_core::sync::atomic::AtomicBool;
+            unsafe fn __stfs_token_issued() -> &'static $crate::core::sync::atomic::AtomicBool {
+                use $crate::core::sync::atomic::AtomicBool;
                 static TOKEN_ISSUED: AtomicBool = AtomicBool::new(false);
                 &TOKEN_ISSUED
             }
@@ -61,7 +61,7 @@ macro_rules! impl_singleton_token_factory {
         unsafe impl $crate::SingletonTokenFactory for $ty {
             #[inline]
             fn take() -> bool {
-                use $crate::std_core::sync::atomic::Ordering;
+                use $crate::core::sync::atomic::Ordering;
                 let token_issued =
                     unsafe { <$ty as $crate::SingletonTokenFactoryStorage>::__stfs_token_issued() };
                 !token_issued.swap(true, Ordering::Acquire)
@@ -71,7 +71,7 @@ macro_rules! impl_singleton_token_factory {
             #[allow(unused_unsafe)]
             #[inline]
             unsafe fn r#return() {
-                use $crate::std_core::sync::atomic::Ordering;
+                use $crate::core::sync::atomic::Ordering;
                 let token_issued =
                     unsafe { <$ty as $crate::SingletonTokenFactoryStorage>::__stfs_token_issued() };
                 token_issued.store(false, Ordering::Release);

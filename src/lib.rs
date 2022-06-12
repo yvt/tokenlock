@@ -240,7 +240,7 @@
 //! writing them using shared references (all of which must be on the same
 //! thread because the token is `!Sync`) to the token.
 //!
-//! [`Cell`]: crate::std_core::cell::Cell
+//! [`Cell`]: core::cell::Cell
 //!
 //! ```
 //! # use tokenlock::*;
@@ -321,21 +321,19 @@
 //! [4]: https://crates.io/crates/qcell
 //! [5]: https://crates.io/crates/singleton-trait
 //! [6]: https://crates.io/crates/token-cell
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 #![cfg_attr(feature = "doc_cfg", feature(doc_cfg))]
 #![deny(rust_2018_idioms)]
 
+#[doc(hidden)]
+pub use core;
 #[cfg(feature = "alloc")]
 extern crate alloc;
-#[cfg(not(feature = "std"))]
-#[doc(hidden)]
-pub extern crate core as std_core;
 #[cfg(feature = "std")]
-#[doc(hidden)]
-pub extern crate std as std_core;
+extern crate std;
 
-use self::std_core::cell::UnsafeCell;
-use self::std_core::{fmt, pin::Pin};
+use core::cell::UnsafeCell;
+use core::{fmt, pin::Pin};
 
 // Modules
 // ----------------------------------------------------------------------------
@@ -450,7 +448,7 @@ unsafe impl<T: ?Sized + Send, Keyhole: Sync> Sync for UnsyncTokenLock<T, Keyhole
 ///
 /// See the [module-level documentation] for more details.
 ///
-/// [pinned]: std_core::pin
+/// [pinned]: core::pin
 /// [module-level documentation]: index.html
 ///
 /// # Examples
@@ -488,7 +486,7 @@ unsafe impl<T: ?Sized + Send + Sync, Keyhole: Sync> Sync for PinTokenLock<T, Key
 ///
 /// See the [module-level documentation] for more details.
 ///
-/// [pinning]: std_core::pin
+/// [pinning]: core::pin
 /// [module-level documentation]: index.html#sync-tokens
 #[derive(Default)]
 pub struct UnsyncPinTokenLock<T: ?Sized, Keyhole> {
@@ -830,7 +828,7 @@ macro_rules! impl_common {
                 /// This function corresponds to [`std::mem::replace`].
                 #[inline]
                 pub fn replace<K: Token<Keyhole>>(&self, token: &mut K, t: T) -> T {
-                    std_core::mem::replace(self.write(token), t)
+                    core::mem::replace(self.write(token), t)
                 }
 
                 /// Replace the contained data with a new one computed by the given
@@ -859,7 +857,7 @@ macro_rules! impl_common {
                 ) -> Result<T, BadTokenError> {
                     let inner = self.try_write(token)?;
                     let new = f(inner);
-                    Ok(std_core::mem::replace(inner, new))
+                    Ok(core::mem::replace(inner, new))
                 }
 
                 /// Swap the contained data with the contained data of `other`. Panic if
@@ -894,7 +892,7 @@ macro_rules! impl_common {
                     // Can't take multiple loans using a single `token`, so we need raw
                     // pointers here.
                     unsafe {
-                        std_core::ptr::swap(self.as_ptr(), other.as_ptr());
+                        core::ptr::swap(self.as_ptr(), other.as_ptr());
                     }
                     Ok(())
                 }
